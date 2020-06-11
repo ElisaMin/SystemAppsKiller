@@ -23,13 +23,11 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import dev.utils.app.ShellUtils
 import kotlinx.android.synthetic.main.item_recycler_view.view.*
-import me.heizi.box.packagemanager.MainActivity
-import me.heizi.box.packagemanager.R
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.activity_main.view.*
+import me.heizi.box.packagemanager.*
 import java.io.IOException
 import java.lang.Exception
-import me.heizi.box.packagemanager.recyclerView
 
 class MyRecyclerViewAdapter(arraylist: ArrayList<PackageInfo>) :Adapter<MyRecyclerViewAdapter.MyHolder> (){
 
@@ -57,9 +55,8 @@ class MyRecyclerViewAdapter(arraylist: ArrayList<PackageInfo>) :Adapter<MyRecycl
         val nameTextView=itemView.appName
         val appIcon=itemView.appIcon
         val appInfo=itemView.appInfo
-        val editor=MainActivity.sharedPreferences.edit()
+        val editor=sharedPreferences.edit()
         lateinit var pkginfo:PackageInfo
-        val context = MainActivity.context
         val packageManager:PackageManager = context.packageManager
 
         fun bind(position:Int ){
@@ -78,7 +75,13 @@ class MyRecyclerViewAdapter(arraylist: ArrayList<PackageInfo>) :Adapter<MyRecycl
                 val sourceDirectory = applctInfo.sourceDir.replace("/[A-Za-z0-9 -]+.apk".toRegex(), "")
                 val dataDirectory = applctInfo.dataDir
                 try {
-                    ShellUtils.execCmd(arrayOf("mount -wo remount / ","chmod 777 /oem","mount -wo remount /oem/OP","chmod 777 /oem/OP"),true,true).apply {
+                    ShellUtils.execCmd(
+                        arrayOf(
+                            "mount -wo remount / ",
+                            "chmod 777 /oem",
+                            "mount -wo remount /oem/OP",
+                            "chmod 777 /oem/OP"
+                        ), true,true).apply {
                         if (!isSuccess){
                             Snackbar.make(itemView,"挂载OP失败",Snackbar.LENGTH_INDEFINITE).apply {
                                 setAction("不再显示"){
@@ -91,7 +94,7 @@ class MyRecyclerViewAdapter(arraylist: ArrayList<PackageInfo>) :Adapter<MyRecycl
                         }
                     }
                     ShellUtils.execCmd(arrayOf("mount -wo remount / ","chmod 777 $sourceDirectory","chmod 777 ${applctInfo.sourceDir}"),true)
-                    ShellUtils.execCmd(if (!MainActivity.isBackup) "rm -rf $sourceDirectory" else " mkdir -p /sdcard$sourceDirectory && mv $sourceDirectory /sdcard$sourceDirectory ",  true, true).let {
+                    ShellUtils.execCmd(if (!isBackup) "rm -rf $sourceDirectory" else " mkdir -p /sdcard$sourceDirectory && mv $sourceDirectory /sdcard$sourceDirectory ",  true, true).let {
                         if (it.isSuccess){
                             editor.putString("${nameTextView.text}_source",sourceDirectory)
                             editor.apply()
