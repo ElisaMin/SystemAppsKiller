@@ -1,2 +1,3 @@
-rootProject.name='package manager'
+rootProject.name = "PackageManager"
 include ':app'
+include ':kshell'
