@@ -48,7 +48,6 @@ class PreconfigFragment : Fragment(R.layout.preconfig_fragment) {
 
     override fun onResume() {
         super.onResume()
-
         lifecycleScope.launch(IO) {
             viewModel.flow.collect {
                 when(it) {

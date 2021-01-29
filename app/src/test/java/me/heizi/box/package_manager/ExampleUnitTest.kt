@@ -1,5 +1,6 @@
 package me.heizi.box.package_manager
 
+import android.content.pm.PackageManager
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
@@ -21,6 +22,15 @@ class ExampleUnitTest {
     @Test
     fun addition_isCorrect() {
         assertEquals(4, 2 + 2)
+    }
+}
+
+class PackageManagers {
+    @Test
+    fun packageManagerFlags() {
+        println(PackageManager.GET_ACTIVITIES)
+        println(PackageManager.MATCH_SYSTEM_ONLY)
+        println(PackageManager.MATCH_SYSTEM_ONLY and PackageManager.GET_ACTIVITIES)
     }
 }
 
