@@ -1,4 +1,8 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
+
+    <attr name="colorClickable"/>
+    <attr name="fgColor"/>
+
     <!-- Base application theme. -->
     <style name="Theme.PackageManager" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Primary brand color. -->
@@ -11,7 +15,10 @@
         <item name="colorOnSecondary">@color/black</item>
         <!-- Status bar color. -->
         <item name="android:statusBarColor" tools:targetApi="l">@color/white</item>
-        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightStatusBar">true</item>
         <!-- Customize your theme here. -->
+        <item name="android:background">?colorOnPrimary</item>
+        <item name="colorClickable">@color/lightGray</item>
+        <item name="isLightTheme">true</item>
     </style>
 </resources>

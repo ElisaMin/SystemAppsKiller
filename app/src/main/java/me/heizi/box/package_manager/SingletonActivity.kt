@@ -6,7 +6,6 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import me.heizi.box.package_manager.models.PreferencesMapper
-import me.heizi.box.package_manager.utils.Apps
 
 class SingletonActivity : AppCompatActivity() {
 
@@ -18,7 +17,6 @@ class SingletonActivity : AppCompatActivity() {
 
     val viewModel:SingletonViewModel by viewModels()
     val preferences by lazy { PreferencesMapper(this) }
-    val packageManager by lazy { Apps(getPackageManager()) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
