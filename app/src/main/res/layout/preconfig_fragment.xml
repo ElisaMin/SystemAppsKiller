@@ -43,7 +43,7 @@
         <TextView
             android:id="@+id/textView2"
             android:layout_width="0dp"
-            android:text="@{vm.noteText}"
+            android:text="@{vm.text}"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginTop="76dp"
