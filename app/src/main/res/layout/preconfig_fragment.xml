@@ -31,6 +31,8 @@
 
         <ProgressBar
             android:id="@+id/progressBar"
+            android:indeterminate="true"
+            android:visibility="@{vm.isWaiting}"
             style="@style/Widget.AppCompat.ProgressBar.Horizontal"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -41,6 +43,7 @@
         <TextView
             android:id="@+id/textView2"
             android:layout_width="0dp"
+            android:text="@{vm.noteText}"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginTop="76dp"
@@ -53,24 +56,44 @@
             tools:text="您好欢迎来到NMSL" />
 
         <com.google.android.material.textfield.TextInputLayout
+            android:visibility="@{vm.isShowingMountInput}"
+            android:id="@+id/textInputLayout"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="32dp"
+            android:layout_marginStart="16dp"
             android:layout_marginTop="32dp"
-            android:layout_marginEnd="32dp"
-            app:endIconCheckable="true"
-            app:endIconMode="custom"
-            app:endIconDrawable="@drawable/ic_outline_done_24"
+            android:layout_marginEnd="16dp"
             android:hint="挂载指令"
+            app:endIconCheckable="true"
+            app:endIconDrawable="@drawable/ic_outline_done_24"
+            app:endIconMode="custom"
+            app:helperText="卸载系统应用需要系统文件的写入权限，请在本输入框内输入支持本应用获得写入权限的指令。挂载System分区、OP分区、Vendor分区等等指令都可以，支持多行写入。\nNOTE：您在此所输入的每一个字符都会在每次{执行[卸载系统应用]操作前}执行，你可以输入点花的随便你怎么玩。"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/textView2">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:lines="3"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:text="@{vm.mountString}" />
         </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:text="@{vm.errorMessage}"
+            android:textColor="?colorSecondary"
+            android:id="@+id/textView5"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp"
+            android:textAlignment="center"
+            app:layout_constraintBottom_toTopOf="@+id/textView"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/textInputLayout"
+            app:layout_constraintVertical_bias="0.81"
+            tools:text="错误信息" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

@@ -8,8 +8,7 @@ import androidx.paging.PagingState
 import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.models.DisplayingData
 import me.heizi.box.package_manager.models.DisplayingData.Companion.displaying
-import me.heizi.box.package_manager.utils.Apps
-import me.heizi.box.package_manager.utils.isUserApp
+import me.heizi.box.package_manager.repositories.PackageRepository.Companion.getPreviousPath
 
 
 /**
@@ -27,9 +26,12 @@ import me.heizi.box.package_manager.utils.isUserApp
  */
 class AppsPagingSource(
         private val pm: PackageManager,
+        private val source:List<ApplicationInfo>
 ): PagingSource<Int, DisplayingData>() {
 
-    private lateinit var source:List<ApplicationInfo>
+
+
+
     override fun getRefreshKey(state: PagingState<Int, DisplayingData>): Int {
         Log.i(TAG, "getRefreshKey: onCalled ${state.anchorPosition}")
         return  state.anchorPosition?.plus(1) ?: 0
@@ -55,7 +57,7 @@ class AppsPagingSource(
         //0则加标题
         //第一次时加载本次和下次的path
         //后面再进入循环 则加载下次的path即可
-        var previousPath = Apps.getPreviousPath(source[start].sourceDir)
+        var previousPath = getPreviousPath(source[start].sourceDir)
         
         if (start == 0) {
             add(DisplayingData.Header(previousPath))
@@ -64,7 +66,7 @@ class AppsPagingSource(
             val displaying = source[i].displaying(pm, i)
             add(displaying)
             //判断本次和下次是否为一致
-            val nextPreviousPath = if (i <= source.lastIndex - 1) Apps.getPreviousPath(source[i + 1].sourceDir) else null
+            val nextPreviousPath = if (i <= source.lastIndex - 1) getPreviousPath(source[i + 1].sourceDir) else null
             //不一致时添加标题
             if (nextPreviousPath != null && previousPath != nextPreviousPath) {
                 add(DisplayingData.Header(nextPreviousPath))
@@ -99,8 +101,6 @@ class AppsPagingSource(
              */
             is LoadParams.Refresh -> {
                 Log.i(TAG, "load: 刷新中")
-                source = Apps(pm).asSortedList
-                    .filter { !it.isUserApp }
                 nextKey =  list.append(thisKey,params.loadSize)
                 Log.i(TAG, "load: 刷新完成")
             }

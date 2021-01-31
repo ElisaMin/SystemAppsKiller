@@ -11,5 +11,5 @@ import me.heizi.box.package_manager.utils.PreferenceMapped
 class PreferencesMapper(activity:Activity):PreferenceMapped(activity.getPreferences(Context.MODE_PRIVATE)) {
 
     /** 挂载system用到的指令 */
-    var mountString:String? by named("")
+    var mountString:String? by named("mount_system_string")
 }

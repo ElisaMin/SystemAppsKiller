@@ -17,7 +17,7 @@ sealed class DisplayingData {
                 = DisplayingApp(
                 icon = pm.getApplicationIcon(this),
                 name = pm.getApplicationLabel(this),
-                sDir = sourceDir ,
+                sDir = packageName ,
                 position = position
         )
     }

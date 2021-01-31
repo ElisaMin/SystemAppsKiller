@@ -2,10 +2,14 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/nav_one"
-    app:startDestination="@id/homeFragment">
+    app:startDestination="@id/preconfigFragment">
 
     <fragment
         android:id="@+id/homeFragment"
         android:name="me.heizi.box.package_manager.ui.home.HomeFragment"
         android:label="HomeFragment" />
+    <fragment
+        android:id="@+id/preconfigFragment"
+        android:name="me.heizi.box.package_manager.ui.pre_config.PreconfigFragment"
+        android:label="PreconfigFragment" />
 </navigation>

@@ -1,10 +1,12 @@
 package me.heizi.box.package_manager.utils
 
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.core.content.edit
-import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import me.heizi.box.package_manager.Application.Companion.TAG
 import kotlin.reflect.KProperty
 
 /**
@@ -28,8 +30,6 @@ open class PreferenceMapped (
         sp.registerOnSharedPreferenceChangeListener(onChange)
     }
 
-
-
     fun<T:Any?> named(key: String) = Map<T>(key)
 
     @Suppress("UNCHECKED_CAST")
@@ -38,7 +38,8 @@ open class PreferenceMapped (
             return hashMap[key] as T
         }
         operator fun setValue(thisRef: PreferenceMapped, property: KProperty<*>, value: T) {
-            GlobalScope.launch(IO) {
+            Log.i(TAG, "setValue: setting $key $value")
+            GlobalScope.launch(Default) {
                 sp.edit(commit = true) {
                     when (value) {
                         is Int -> putInt(key, value)
@@ -50,8 +51,11 @@ open class PreferenceMapped (
                         else -> putString(key, value.toString())
                     }
                 }
+                onChange.onSharedPreferenceChanged(sp,key)
+                Log.i(TAG, "setValue: done! $key")
             }
         }
+
     }
 
 }
