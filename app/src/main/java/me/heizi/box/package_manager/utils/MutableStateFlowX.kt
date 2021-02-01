@@ -1,10 +1,10 @@
 package me.heizi.box.package_manager.utils
 
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import kotlinx.coroutines.Dispatchers.Main
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 
@@ -17,3 +17,6 @@ inline infix fun <T> MutableLiveData<T>.set(value: T) {
         this@set.value = value
     }
 }
+
+inline fun <T> MutableLiveData<T>.unMutable() = this as LiveData<T>
+inline fun <T> MutableStateFlow<T>.unMutable() = this as StateFlow<T>

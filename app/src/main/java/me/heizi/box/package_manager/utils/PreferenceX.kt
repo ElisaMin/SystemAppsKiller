@@ -10,10 +10,7 @@ import me.heizi.box.package_manager.Application.Companion.TAG
 import kotlin.reflect.KProperty
 
 /**
- * Preference mapped
- *
- * @property sp
- * @constructor Create empty Preference mapped
+ * 一个方便快捷的轮子
  */
 open class PreferenceMapped (
     private val sp:SharedPreferences

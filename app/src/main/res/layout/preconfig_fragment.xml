@@ -16,18 +16,6 @@
         android:layout_height="match_parent"
         tools:context=".ui.pre_config.PreconfigFragment">
 
-        <TextView
-            android:id="@+id/textView"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="24dp"
-            android:text="免责声明\n本软件可能会造成硬件损坏，请酌情使用。 \n如果因使用本软件造成的数据丢失、硬件损坏、系统文件丢失等问题，与软件作者无关。\n给予本软件Root权限后默认您已经知晓本软的风险，并执意打开。"
-            android:textAlignment="center"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
 
         <ProgressBar
             android:id="@+id/progressBar"
@@ -55,45 +43,58 @@
             app:layout_constraintTop_toBottomOf="@+id/progressBar"
             tools:text="您好欢迎来到NMSL" />
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:visibility="@{vm.isShowingMountInput}"
-            android:id="@+id/textInputLayout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+
+        <ScrollView
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="32dp"
-            android:layout_marginEnd="16dp"
-            android:hint="挂载指令"
-            app:endIconCheckable="true"
-            app:endIconDrawable="@drawable/ic_outline_done_24"
-            app:endIconMode="custom"
-            app:helperText="卸载系统应用需要系统文件的写入权限，请在本输入框内输入支持本应用获得写入权限的指令。挂载System分区、OP分区、Vendor分区等等指令都可以，支持多行写入。\nNOTE：您在此所输入的每一个字符都会在每次{执行[卸载系统应用]操作前}执行，你可以输入点花的随便你怎么玩。"
+            android:layout_height="0dp"
+            android:padding="8dp"
+            android:scrollbarSize="3dp"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/textView2">
 
-            <com.google.android.material.textfield.TextInputEditText
+            <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@{vm.mountString}" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:orientation="vertical">
 
-        <TextView
-            android:text="@{vm.errorMessage}"
-            android:textColor="?colorSecondary"
-            android:id="@+id/textView5"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="16dp"
-            android:textAlignment="center"
-            app:layout_constraintBottom_toTopOf="@+id/textView"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textInputLayout"
-            app:layout_constraintVertical_bias="0.81"
-            tools:text="错误信息" />
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_marginVertical="8dp"
+                    android:id="@+id/textInputLayout"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="挂载指令"
+                    android:visibility="@{vm.isShowingMountInput}"
+                    app:endIconCheckable="true"
+                    app:endIconDrawable="@drawable/ic_outline_done_24"
+                    app:endIconMode="custom"
+                    app:helperText="卸载系统应用需要系统文件的写入权限，请在本输入框内输入支持本应用获得写入权限的指令。挂载System分区、OP分区、Vendor分区等等指令都可以，支持多行写入。\nNOTE：您在此所输入的每一个字符都会在每次{执行[卸载系统应用]操作前}执行，你可以输入点花的随便你怎么玩。">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@={vm.mountString}" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <TextView
+                    android:layout_margin="8dp"
+                    android:id="@+id/textView5"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@{vm.errorMessage}"
+                    android:textColor="?colorSecondary"
+                    tools:text="错误信息" />
+                <TextView
+                    android:layout_margin="8dp"
+                    android:id="@+id/textView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="免责声明\n本软件可能会造成硬件损坏，请酌情使用。 \n如果因使用本软件造成的数据丢失、硬件损坏、系统文件丢失等问题，与软件作者无关。\n给予本软件Root权限后默认您已经知晓本软的风险，并执意打开。"
+                    android:textAlignment="center"/>
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
+        </ScrollView>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

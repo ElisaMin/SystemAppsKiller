@@ -8,6 +8,7 @@ import androidx.paging.PagingState
 import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.models.DisplayingData
 import me.heizi.box.package_manager.models.DisplayingData.Companion.displaying
+import me.heizi.box.package_manager.repositories.PackageRepository.Companion.diffPreviousPathAreNotSame
 import me.heizi.box.package_manager.repositories.PackageRepository.Companion.getPreviousPath
 
 
@@ -38,7 +39,7 @@ class AppsPagingSource(
     }
 
     
-    private fun MutableList<DisplayingData>.append(page:Int, size:Int):Int? {
+    private suspend fun MutableList<DisplayingData>.append(page:Int, size:Int):Int? {
         Log.i(TAG, "load: 追加")
 
         val start = size * page
@@ -58,7 +59,7 @@ class AppsPagingSource(
         //第一次时加载本次和下次的path
         //后面再进入循环 则加载下次的path即可
         var previousPath = getPreviousPath(source[start].sourceDir)
-        
+
         if (start == 0) {
             add(DisplayingData.Header(previousPath))
         }
@@ -67,9 +68,12 @@ class AppsPagingSource(
             add(displaying)
             //判断本次和下次是否为一致
             val nextPreviousPath = if (i <= source.lastIndex - 1) getPreviousPath(source[i + 1].sourceDir) else null
+
+            val diffResult = nextPreviousPath?.diffPreviousPathAreNotSame(previousPath) ?: false
+
             //不一致时添加标题
-            if (nextPreviousPath != null && previousPath != nextPreviousPath) {
-                add(DisplayingData.Header(nextPreviousPath))
+            if (diffResult) {
+                add(DisplayingData.Header(nextPreviousPath!!))
             }
             //然后赋值
             previousPath = nextPreviousPath ?: break

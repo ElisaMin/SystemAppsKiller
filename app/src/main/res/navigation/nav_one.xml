@@ -11,5 +11,9 @@
     <fragment
         android:id="@+id/preconfigFragment"
         android:name="me.heizi.box.package_manager.ui.pre_config.PreconfigFragment"
-        android:label="PreconfigFragment" />
+        android:label="PreconfigFragment" >
+        <action
+            android:id="@+id/action_preconfigFragment_to_homeFragment"
+            app:destination="@id/homeFragment" />
+    </fragment>
 </navigation>

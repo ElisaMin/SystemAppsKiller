@@ -12,4 +12,13 @@ class PreferencesMapper(activity:Activity):PreferenceMapped(activity.getPreferen
 
     /** 挂载system用到的指令 */
     var mountString:String? by named("mount_system_string")
+    /** 是否备份 */
+    var isBackup:Boolean? by named("backup")
+    /**
+     * 备份在哪
+     *
+     * 空时默认值在/sdcard/android/.........
+     */
+    var backupPath:String? by named("backup_path")
+
 }

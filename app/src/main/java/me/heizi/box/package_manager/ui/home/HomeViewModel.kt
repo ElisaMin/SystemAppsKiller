@@ -29,7 +29,8 @@ import me.heizi.box.package_manager.models.DisplayingData
 import me.heizi.box.package_manager.repositories.AppsPagingSource
 import me.heizi.box.package_manager.repositories.PackageRepository
 import me.heizi.kotlinx.shell.CommandResult
-import me.heizi.kotlinx.shell.OneTimeExecutor.Companion.su
+import me.heizi.kotlinx.shell.su
+
 
 class HomeViewModel : ViewModel() {
 
@@ -39,7 +40,7 @@ class HomeViewModel : ViewModel() {
     @Suppress("NAME_SHADOWING")
     fun start(pm: PackageManager) {
 
-        repository = PackageRepository(viewModelScope,pm)
+        repository = PackageRepository(pm)
 
         val list = viewModelScope.async {
             repository.systemAppsFlow.value
