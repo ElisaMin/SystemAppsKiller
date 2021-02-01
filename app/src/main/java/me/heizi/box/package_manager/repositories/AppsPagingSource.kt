@@ -24,13 +24,12 @@ import me.heizi.box.package_manager.repositories.PackageRepository.Companion.get
  * Value是啥?
  * value拿来给屏幕展示的数据[DisplayingData]]
  *
+ * todo 添加可过滤功能
  */
 class AppsPagingSource(
         private val pm: PackageManager,
         private val source:List<ApplicationInfo>
 ): PagingSource<Int, DisplayingData>() {
-
-
 
 
     override fun getRefreshKey(state: PagingState<Int, DisplayingData>): Int {
@@ -95,6 +94,7 @@ class AppsPagingSource(
         val thisKey = params.key ?: 0
         Log.i(TAG, "load: this key $thisKey")
         val list = ArrayList<DisplayingData>()
+
 
         var nextKey:Int? = thisKey+1
 

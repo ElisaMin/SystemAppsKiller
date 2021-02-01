@@ -1,116 +1,116 @@
 package me.heizi.box.package_manager.ui.home
 
-import android.content.Context
-import android.content.pm.PackageManager
+import android.app.Application
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.Filter
+import android.widget.Filterable
 import android.widget.FrameLayout
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
-import androidx.paging.PagingData
 import androidx.paging.PagingDataAdapter
+import androidx.paging.filter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.Dispatchers.Main
-import kotlinx.coroutines.Dispatchers.Unconfined
-import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.Dispatchers.Default
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.R
 import me.heizi.box.package_manager.databinding.ItemAppUninstallBinding
 import me.heizi.box.package_manager.models.DisplayingData
 import me.heizi.box.package_manager.repositories.AppsPagingSource
 import me.heizi.box.package_manager.repositories.PackageRepository
-import me.heizi.kotlinx.shell.CommandResult
-import me.heizi.kotlinx.shell.su
+import java.util.*
 
 
-class HomeViewModel : ViewModel() {
+class HomeViewModel(application: Application) : AndroidViewModel(application),Filterable {
 
-    lateinit var repository: PackageRepository
-    lateinit var flow:Flow<PagingData<DisplayingData>>
+    private lateinit var repository: PackageRepository
+    private val pager by lazy {
+        Pager(config = PagingConfig(20), pagingSourceFactory = {
+            AppsPagingSource(application.packageManager,repository.systemAppsFlow.value)
+        })
+    }
+
     val adapter by lazy { Adapter() }
-    @Suppress("NAME_SHADOWING")
-    fun start(pm: PackageManager) {
 
-        repository = PackageRepository(pm)
 
-        val list = viewModelScope.async {
-            repository.systemAppsFlow.value
+    /**
+     * 正式启动
+     *
+     * @param packageRepository
+     */
+    fun start(packageRepository: PackageRepository) {
+        repository = packageRepository
+        viewModelScope.launch(Default) {
+            pager.flow.collectLatest(adapter::submitData)
         }
-        viewModelScope.launch(Unconfined) {
-             launch{
-                 val list= list.await()
-                flow = Pager(config = PagingConfig(20), pagingSourceFactory = {
-                    AppsPagingSource(pm,list)
-                }).flow.flowOn(Unconfined)
-                flow.collect(adapter::submitData)
-            }
 
-        }
     }
 
 
-    fun uninstalling(context: Context,da: DisplayingData.DisplayingApp) {
+    private val filter by lazy {
+        object : Filter() {
+            override fun performFiltering(constraint: CharSequence?): FilterResults {
+                Log.i(TAG, "performFiltering: result")
+                return FilterResults()
+            }
+            override fun publishResults(constraint: CharSequence?, results: FilterResults?) { viewModelScope.launch(Default) {
+                Log.i(TAG, "publishResults: called ")
+                pager.flow.collectLatest { data ->
+                    val pagingData = if (constraint.isNullOrEmpty()) data
+                    else {
+                        fun format(string: CharSequence) = string.toString().trim().encodeToByteArray().toString(charset = Charsets.UTF_8).toLowerCase(Locale.ROOT)
+                        val s = format(constraint)
+                        data.filter {
 
-        val executing = viewModelScope.su("pm uninstall ${da.sDir}")
-        val stringBuilder = StringBuilder()
-
-        viewModelScope.launch(Main) {
-            AlertDialog.Builder(context)
-                    .setTitle("执行结果")
-                    .let {
-                        launch(IO) {
-                            when(val r = executing.await()) {
-                                is CommandResult.Success ->{
-                                    stringBuilder.append("成功!\n")
-                                    stringBuilder.append(r.message)
-                                }
-                                is CommandResult.Failed ->{
-                                    stringBuilder.append("失败:${r.code}\n")
-                                    stringBuilder.append("处理信息:${r.processingMessage}\n")
-                                    r.errorMessage.takeIf { !it.isNullOrEmpty() }?.let {
-                                        stringBuilder.append("失败信息:${it}\n")
-                                    }
-                                }
-                            }
-                            launch(Main) {
-                                it.setMessage(stringBuilder.toString())
-                                it.show()
-                            }
+                            it is DisplayingData.DisplayingApp && (format(it.name).contains(s) || format(it.sDir).contains(s))
                         }
                     }
+                    Log.i(TAG, "publishResults: $constraint")
+                    adapter.submitData(pagingData)
+                    Log.i(TAG, "publishResults: updated")
+                    cancel()
+                }
+//                pager.flow.singleOrNull()?.let { data -> //如果是空的咱直接emit
+//                }?: application.longToast("搜索失败")
+            } }
+
         }
-
-
     }
+
+
 
     companion object {
         const val TITLE_VIEW = 0x0001
         const val APP_VIEW = 0x0002
         val differ = object: DiffUtil.ItemCallback<DisplayingData>() {
-            override fun areItemsTheSame(oldItem: DisplayingData, newItem: DisplayingData): Boolean = when(oldItem) {
-                is DisplayingData.Header -> {
-                    if (newItem is DisplayingData.Header)  {
-                        newItem.path == oldItem.path
-                    } else false
-                }
-                is DisplayingData.DisplayingApp -> {
-                    if (newItem is DisplayingData.DisplayingApp) {
-                        newItem.position == oldItem.position
-                    }else false
+            override fun areItemsTheSame(oldItem: DisplayingData, newItem: DisplayingData): Boolean {
+                Log.i(TAG, "areItemsTheSame: called ")
+                return when(oldItem) {
+                    is DisplayingData.Header -> {
+                        if (newItem is DisplayingData.Header)  {
+                            newItem.path == oldItem.path
+                        } else false
+                    }
+                    is DisplayingData.DisplayingApp -> {
+                        if (newItem is DisplayingData.DisplayingApp) {
+                            newItem.position == oldItem.position
+                        }else false
+                    }
                 }
             }
-            override fun areContentsTheSame(oldItem: DisplayingData, newItem: DisplayingData): Boolean
-                    = if (oldItem is DisplayingData.Header || newItem is DisplayingData.Header) true
-            else oldItem as DisplayingData.DisplayingApp == newItem as DisplayingData.DisplayingApp
+            override fun areContentsTheSame(oldItem: DisplayingData, newItem: DisplayingData): Boolean {
+                Log.i(TAG, "areContentsTheSame: called")
+                return if (oldItem is DisplayingData.Header || newItem is DisplayingData.Header) true
+                else oldItem as DisplayingData.DisplayingApp == newItem as DisplayingData.DisplayingApp
+            }
         }
     }
 
@@ -123,6 +123,12 @@ class HomeViewModel : ViewModel() {
      */
     class TitleViewHolder(val layout: FrameLayout): RecyclerView.ViewHolder(layout)
 
+
+    /**
+     * Adapter
+     *
+     * 列表展示的适配器
+     */
     inner class Adapter (
 
     ) : PagingDataAdapter<DisplayingData, RecyclerView.ViewHolder>(differ) {
@@ -147,7 +153,7 @@ class HomeViewModel : ViewModel() {
         private fun AppViewHolder.bind(displayingData: DisplayingData.DisplayingApp) {
             binding.data = displayingData
             binding.uninstallBtn.setOnClickListener {
-                uninstalling(it.context,displayingData)
+                TODO("等待本view model的卸载功能完善")
             }
         }
 
@@ -164,7 +170,10 @@ class HomeViewModel : ViewModel() {
                 else -> throw TypeCastException("viewHolder at $position is not AppsViewHolder or TitleViewHolder !!")
             }
         }
+
     }
+
+    override fun getFilter(): Filter = filter
 
 
 }

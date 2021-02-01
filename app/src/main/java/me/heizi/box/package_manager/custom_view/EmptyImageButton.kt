@@ -1,7 +1,5 @@
 package me.heizi.box.package_manager.custom_view
 
-import android.content.res.Resources.getSystem
-
 
 /**
  * 下次一定
@@ -22,4 +20,4 @@ import android.content.res.Resources.getSystem
 //
 //}
 
-val Int.dp: Int get() = (this / getSystem().displayMetrics.density).toInt()
+//val Int.dp: Int get() = (this / getSystem().displayMetrics.density).toInt()

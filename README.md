@@ -31,3 +31,31 @@ GPLv3.0
 点击上方工具栏的加号展示所有从`已经卸载的列表`，并对其进行添加和删除的操作 上方有完成按钮，点击完成后提示完成和长按版本可复制。
 ### 导入
 界面内有按钮提示从粘贴板获取数据，读取后在下方展示所有的数据，可以进行删除单个数据，点击上方完成按钮即可完成卸载操作。
+## 数据库
+存放的内容其实就卸载时的记录，所以每一次卸载都会记录：
+```json5
+{
+  id:0,
+  name: "heizi_tool",
+  packages: "me.heizi.tool",
+  source: "/system/app/abc",
+  data: null,
+  isBackuped: false
+}
+```
+对于版本信息来说
+```json5
+{
+  id: "0",
+  created_time: "",
+  name: "string",
+}
+```
+还有个中间表
+```json5
+{
+  id: 0,
+  versions_id: 0,
+  uinstall_id: 0
+}
+```

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:ignore="HardcodedText,AlwaysShowAction"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/launch_input_menu"
+        android:icon="@drawable/ic_outline_cleaning_services_24"
+        android:iconTint="?android:textColorPrimary"
+        android:title="导入"
+        app:showAsAction="ifRoom" />
+    <item
+        android:iconTint="?android:textColorPrimary"
+        android:id="@+id/launch_export_menu"
+        app:showAsAction="ifRoom"
+        android:icon="@drawable/ic_outline_save_24"
+        android:title="导出" />
+    <item
+        android:iconTint="?android:textColorPrimary"
+        android:id="@+id/search_menu_home"
+        android:icon="@drawable/ic_baseline_search_24"
+        android:title="搜索"
+        app:actionViewClass="androidx.appcompat.widget.SearchView"
+        app:showAsAction="always|collapseActionView" />
+    <item
+        android:iconTint="?android:textColorPrimary"
+        android:id="@+id/launch_help_menu"
+        android:icon="@drawable/ic_outline_help_outline_24"
+        android:title="帮助"
+        app:showAsAction="always" />
+    <item
+        android:iconTint="?android:textColorPrimary"
+        android:id="@+id/launch_settings_menu"
+        app:showAsAction="ifRoom"
+        android:icon="@drawable/ic_outline_settings_24"
+        android:title="设置" />
+</menu>

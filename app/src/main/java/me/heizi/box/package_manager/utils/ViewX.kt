@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.DialogInterface
 import android.graphics.drawable.Drawable
 import android.view.View
+import android.widget.Toast
 import androidx.annotation.MainThread
 import androidx.appcompat.app.AlertDialog
 
@@ -13,21 +14,24 @@ sealed class DialogBtns(val text:String,val icon:Drawable?=null,val onClick:Dial
     class Neutral(text: String, icon: Drawable?=null, onClick: DialogInterface.OnClickListener) :DialogBtns(text, icon, onClick)
 }
 
+/**
+ * Dialog makers
+ */
 @MainThread
 fun Context.dialog(
     title:String?=null,
     view: View?=null,
     message:String?=null,
     cancelable: Boolean = true,
-    btns:List<DialogBtns>?=null,
-    show:Boolean = true
+    show:Boolean = true,
+    vararg btns: DialogBtns
 ) =
     AlertDialog.Builder(this).run {
         setTitle(title)
         setView(view)
         setMessage(message)
         setCancelable(cancelable)
-        btns?.let {
+        btns.takeIf { it.isNotEmpty() }?.let {
             var i = false
             var j = false
             var k = false
@@ -54,3 +58,7 @@ fun Context.dialog(
         }
         if (show) show() else create()
     }
+
+
+fun Context.longToast(message: String)
+    = Toast.makeText(this,message,Toast.LENGTH_LONG).show()

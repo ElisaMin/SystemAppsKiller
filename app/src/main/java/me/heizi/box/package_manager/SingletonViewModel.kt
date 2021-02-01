@@ -1,8 +1,9 @@
 package me.heizi.box.package_manager
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import me.heizi.box.package_manager.repositories.PackageRepository
 
-class SingletonViewModel: ViewModel() {
-
-
+class SingletonViewModel(application: Application) : AndroidViewModel(application) {
+    val packageRepository = PackageRepository(application)
 }

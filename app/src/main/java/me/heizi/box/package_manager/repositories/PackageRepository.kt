@@ -1,12 +1,20 @@
 package me.heizi.box.package_manager.repositories
 
+import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.util.Log
+import android.widget.Toast
+import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers.Default
+import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.withContext
 import me.heizi.box.package_manager.Application
+import me.heizi.box.package_manager.Application.Companion.TAG
+import java.util.*
+import kotlin.collections.HashMap
 
 /**
  * Package repository 不按照常理出牌的Repository
@@ -15,30 +23,85 @@ import me.heizi.box.package_manager.Application
  * @constructor
  */
 class PackageRepository(
-    private val pm:PackageManager
+    context: Context
 ) {
-//    private val systemPackages get() =  pm.getInstalledPackages(PackageManager.MATCH_SYSTEM_ONLY)
+    private val pm:PackageManager = context.packageManager
     private val systemApps get()  = pm.getInstalledApplications(PackageManager.MATCH_SYSTEM_ONLY)
 
-    // TODO: 2021/2/1 更新算法
-    private val sortedSystemApps get() = systemApps.apply { sortBy { it.sourceDir } }
-    private val _systemAppsFlow by lazy { MutableStateFlow(sortedSystemApps) }
+    private val _systemAppsFlow by lazy { MutableStateFlow(systemApps) }
     val systemAppsFlow get() = _systemAppsFlow.asStateFlow()
+
+
+    init {
+        MainScope().launch(IO) {
+            val time = _systemAppsFlow.value.sort().await()
+            launch(Main) {
+                Toast.makeText(context, "排序完成，本次排序花费${time}ms。", Toast.LENGTH_LONG).show()
+            }
+
+        }
+        Log.i(TAG, "init: sorting")
+    }
+
+
+    /**
+     * 给path排序
+     *
+     * 假如有个path list为
+     * /a/b/e/f.g
+     * /a/b/c/d.e
+     * /a/b/a/b/d.e
+     * /o/p/q/r.s
+     * /h/i/j/k/l.m
+     * 先按照后面拆分两个path段 得到/a/b和c/d.e两个path或这h/i/j和k/l.m
+     * 先排序第一段 然后再进行子path排序
+     */
+    private fun List<ApplicationInfo>.sort() = MainScope().async(Default){
+        Log.i(TAG, "sort: start")
+        //记录时间
+        val time=System.currentTimeMillis()
+        //用hashmap区分前面的路径
+        val group = HashMap<String,ArrayList<ApplicationInfo>>()
+        //循环分组
+        forEach {
+            val k = getPreviousPath(it.sourceDir)
+            group[k]?.add(it) ?: kotlin.run{ group[k] = arrayListOf(it) }
+        }//耗时操作
+        val waiting = Array(group.size){false}
+        val sortTask = async(IO) {
+            var i = 0
+            //排序子组
+            group.forEach {
+                launch(Default) {
+                    val j = i++
+                    it.value.sortBy { it.sourceDir }
+                    group[it.key] = it.value
+                    waiting[j] = true
+                    Log.i(TAG, "sort: ${ System.currentTimeMillis() - time }")
+                }
+            }
+            if (waiting.contains(false)) delay(1)
+        }
+        launch(Main){ Log.i(TAG, "sort: ${group.keys.joinToString(",")}") }
+        val result = LinkedList<ApplicationInfo>()
+        //等待子组排序完毕
+        sortTask.await()
+        //排序父组
+        group.entries.sortedBy { it.key }.forEach {
+            result.addAll(it.value)
+        }
+        //记录时间
+        val dealTime = System.currentTimeMillis() - time
+        Log.i(TAG, "sort: $dealTime")
+        _systemAppsFlow.emit(result.toList())
+        dealTime
+    }
 
     companion object {
         val withApk by lazy { """(/[^/]+)+(/[^/]+\.apk)""".toRegex() }
         val hasNoApk by lazy { """[/\w+]+""".toRegex() }
         private val paths by lazy { """/([^/]+)+""".toRegex() }
 
-//        @JvmStatic
-//        fun main(args: Array<String>) {
-//            val s = "/mnt/c/Windows_d-/system32.apk"
-//            val findAll = paths.findAll(s)
-//            println(findAll.count())
-//            findAll.forEach{
-//                println(it.value)
-//            }
-//        }
 
         /**
          * Diff previous path
