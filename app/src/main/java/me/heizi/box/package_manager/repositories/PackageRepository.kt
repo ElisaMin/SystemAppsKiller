@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.util.Log
-import android.widget.Toast
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
@@ -13,8 +12,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import me.heizi.box.package_manager.Application
 import me.heizi.box.package_manager.Application.Companion.TAG
+import me.heizi.box.package_manager.models.DisplayingData
+import me.heizi.box.package_manager.utils.longToast
 import java.util.*
 import kotlin.collections.HashMap
+import kotlin.math.roundToInt
 
 /**
  * Package repository 不按照常理出牌的Repository
@@ -23,6 +25,7 @@ import kotlin.collections.HashMap
  * @constructor
  */
 class PackageRepository(
+    private val scope: CoroutineScope,
     context: Context
 ) {
     private val pm:PackageManager = context.packageManager
@@ -33,14 +36,44 @@ class PackageRepository(
 
 
     init {
-        MainScope().launch(IO) {
+        scope.launch(IO) {
             val time = _systemAppsFlow.value.sort().await()
+            val all = systemAppsFlow.value.size
+
+            val score = (((time*2).toFloat()/all)*100).roundToInt()
             launch(Main) {
-                Toast.makeText(context, "排序完成，本次排序花费${time}ms。", Toast.LENGTH_LONG).show()
+                context.longToast("排序完成，本次排序花费${time}ms。累赘指数$score。")
             }
 
         }
+        Log.i(TAG, "all app: ${systemAppsFlow.value.size}")
         Log.i(TAG, "init: sorting")
+    }
+
+    /**
+     * 对比显示中数据和ApplicationInfo是否一致
+     *
+     * @param data
+     * @param info
+     * @return 是否一致
+     */
+    private fun diff(data: DisplayingData.App,info:ApplicationInfo):Boolean =
+        (data.name == pm.getApplicationLabel(info).toString() && data.sDir == info.sourceDir)
+
+    @Suppress("DeferredResultUnused")
+    fun reductionToApplication(data:DisplayingData.App):ApplicationInfo? {
+        //根据data获取item
+        val applicationInfo = systemAppsFlow.value[data.position]
+        //比对
+        val isSameItem = diff(data,applicationInfo)
+        //如果一致返回
+        if (isSameItem) return applicationInfo
+        //不一致查找
+        for (i in systemAppsFlow.value) if (diff(data,i)) return i
+        //找不到则刷新
+        Log.e(TAG, "reductionToApplication: $data not found")
+        systemApps.sort()
+        return null
     }
 
 

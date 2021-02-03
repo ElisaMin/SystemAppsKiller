@@ -64,3 +64,27 @@ GPLv3.0
   uinstall_id: 0
 }
 ```
+最终效果:
+```json5
+[
+  {
+    id: 0,
+    name: "一份记录",
+    create_time: "*now",
+    isBackup: true,
+    apps: [{
+      id: 0,
+      name: "name",
+      packageName: "me.heizi.example",
+      source: "/data/app/anyway/any.apk",
+      data: "null"
+    },{
+      id: 1,
+      name: "heizi_tool",
+      packages: "me.heizi.tool",
+      source: "/system/app/abc",
+      data: null,
+    }]
+  }
+]
+```

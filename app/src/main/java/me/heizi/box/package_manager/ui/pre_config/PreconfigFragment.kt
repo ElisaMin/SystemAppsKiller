@@ -74,7 +74,7 @@ class PreconfigFragment : Fragment(R.layout.preconfig_fragment) {
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if(parent.preferences.mountString == null) {
+        if(false) {
             launchOnFirstTime()
         } else {
             toHome()

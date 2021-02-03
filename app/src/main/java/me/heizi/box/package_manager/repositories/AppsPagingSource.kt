@@ -28,21 +28,67 @@ import me.heizi.box.package_manager.repositories.PackageRepository.Companion.get
  */
 class AppsPagingSource(
         private val pm: PackageManager,
-        private val source:List<ApplicationInfo>
+        private val source:List<ApplicationInfo>,
 ): PagingSource<Int, DisplayingData>() {
 
 
-    override fun getRefreshKey(state: PagingState<Int, DisplayingData>): Int {
-        Log.i(TAG, "getRefreshKey: onCalled ${state.anchorPosition}")
-        return  state.anchorPosition?.plus(1) ?: 0
+    init {
+
     }
 
+    override fun getRefreshKey(state: PagingState<Int, DisplayingData>): Int {
+        val result = state.anchorPosition?.let {
+            (it/state.config.pageSize)
+        }?:0
+        Log.i(TAG, "getRefreshKey: positions${state.anchorPosition};page:$result")
+        return  result
+    }
+
+    private suspend fun MutableList<DisplayingData>.prepend(page: Int,size: Int):Int?{
+        Log.i(TAG, "load: 向前")
+        if (page==0) return null
+        //如果size 10 page 3的话那就是 21-30之间的index 所以开始是((s-1)*p)+1 结尾是(s*p)
+        val start = ((page-1)*size)+1
+        val end = size*page
+        show(start..end)
+        return page -1
+    }
+
+    private suspend fun MutableList<DisplayingData>.show(intRange: IntRange) {
+        //进入循环前准备
+        Log.i(TAG, "show: $intRange")
+        //获取当前起始的application
+        var thatApplicationInfo = source[intRange.first]
+        //获取当前的前路径
+        var now = getPreviousPath(thatApplicationInfo.sourceDir)
+        //如果开始的话直接添加
+        if (intRange.first == 0) {
+            add(DisplayingData.Header(now))
+        }
+        for (i in intRange) {
+            Log.i(TAG, "show: $i")
+            //添加本应用
+            val app = thatApplicationInfo.displaying(pm,i)
+            add(app)
+            //获取下一个的前路径 如果到底了就直接跳过
+            if (i<source.size-1) {
+                thatApplicationInfo = source[i+1]
+                val next = getPreviousPath(thatApplicationInfo.sourceDir)
+                //对比
+                val isNotSameShortPath = now.diffPreviousPathAreNotSame(next)
+                //前路径不等添加标题
+                if (isNotSameShortPath) add(DisplayingData.Header(next))
+                //给下一次用
+                now=next
+            }
+        }
+    }
     
     private suspend fun MutableList<DisplayingData>.append(page:Int, size:Int):Int? {
         Log.i(TAG, "load: 追加")
 
         val start = size * page
-        var end = size * (page + 1)-1
+        var end = (size * (page + 1))-1
         
         var nextPage:Int? = page+1
         
@@ -51,32 +97,8 @@ class AppsPagingSource(
             nextPage = null
             end = source.size - 1
         }
-        val rage = start..end
-        Log.i(TAG, "load: $start,$end,$rage",)
-        //加载区域内所有的可显示信息
-        //0则加标题
-        //第一次时加载本次和下次的path
-        //后面再进入循环 则加载下次的path即可
-        var previousPath = getPreviousPath(source[start].sourceDir)
+        show(start..end)
 
-        if (start == 0) {
-            add(DisplayingData.Header(previousPath))
-        }
-        for (i in rage) {
-            val displaying = source[i].displaying(pm, i)
-            add(displaying)
-            //判断本次和下次是否为一致
-            val nextPreviousPath = if (i <= source.lastIndex - 1) getPreviousPath(source[i + 1].sourceDir) else null
-
-            val diffResult = nextPreviousPath?.diffPreviousPathAreNotSame(previousPath) ?: false
-
-            //不一致时添加标题
-            if (diffResult) {
-                add(DisplayingData.Header(nextPreviousPath!!))
-            }
-            //然后赋值
-            previousPath = nextPreviousPath ?: break
-        }
         return nextPage
     }
     
@@ -89,16 +111,19 @@ class AppsPagingSource(
      * 上滑 这个也先慢慢来 跳过
      * 下滑 需求往下
      *
+     * 以上无法实现 就这样 嗯
+     *
      */
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, DisplayingData> {
-        val thisKey = params.key ?: 0
-        Log.i(TAG, "load: this key $thisKey")
         val list = ArrayList<DisplayingData>()
 
+        val thisKey = params.key ?: 0
+        Log.i(TAG, "load: this key $thisKey")
 
         var nextKey:Int? = thisKey+1
+        var prevKey:Int? = thisKey-1
+        if (thisKey ==0) prevKey = null
 
-        
         when(params) {
             /**
              * 获取新的List并执行Append操作
@@ -110,16 +135,19 @@ class AppsPagingSource(
             }
             is LoadParams.Append -> {
                 nextKey =  list.append(thisKey,params.loadSize)
-
+                prevKey = thisKey
             }
             is LoadParams.Prepend -> {
-                Log.i(TAG, "load: 向前")
+
+                prevKey = list.prepend(thisKey,params.loadSize)
+                nextKey = thisKey
             }
         }
-
         Log.i(TAG, "load: result size ${list.size}")
-        return LoadResult.Page(list,thisKey.takeIf { it != 0 } ,nextKey,)
+
+        return LoadResult.Page(list,prevKey ,nextKey,)
     }
 
 }
+
 

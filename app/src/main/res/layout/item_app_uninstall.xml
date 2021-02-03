@@ -6,7 +6,7 @@
     <data>
         <variable
             name="data"
-            type="me.heizi.box.package_manager.models.DisplayingData.DisplayingApp" />
+            type="me.heizi.box.package_manager.models.DisplayingData.App" />
         <variable
             name="vm"
             type="me.heizi.box.package_manager.ui.home.HomeViewModel" />
@@ -87,6 +87,13 @@
                 app:srcCompat="@drawable/ic_outline_delete_forever_24"
                 tools:ignore="ContentDescription"
                 app:tint="?android:textColorPrimary" />
+
+            <TextView
+                android:id="@+id/textView6"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@{Integer.toString(data.position)}"
+                tools:text="1" />
         </FrameLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>

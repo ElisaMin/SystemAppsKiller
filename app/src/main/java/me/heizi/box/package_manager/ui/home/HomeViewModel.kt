@@ -1,6 +1,7 @@
 package me.heizi.box.package_manager.ui.home
 
 import android.app.Application
+import android.content.pm.ApplicationInfo
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -17,15 +18,21 @@ import androidx.paging.filter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers.Default
+import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.R
+import me.heizi.box.package_manager.dao.entities.UninstallRecord
 import me.heizi.box.package_manager.databinding.ItemAppUninstallBinding
 import me.heizi.box.package_manager.models.DisplayingData
 import me.heizi.box.package_manager.repositories.AppsPagingSource
 import me.heizi.box.package_manager.repositories.PackageRepository
+import me.heizi.box.package_manager.utils.isUserApp
+import me.heizi.box.package_manager.utils.uninstallByShell
+import me.heizi.kotlinx.shell.CommandResult
 import java.util.*
 
 
@@ -33,9 +40,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application),Fi
 
     private lateinit var repository: PackageRepository
     private val pager by lazy {
-        Pager(config = PagingConfig(20), pagingSourceFactory = {
-            AppsPagingSource(application.packageManager,repository.systemAppsFlow.value)
-        })
+        Pager(
+            PagingConfig(
+                pageSize = 10,
+                prefetchDistance = 30
+            )
+        ) { AppsPagingSource(application.packageManager,repository.systemAppsFlow.value) }
+
     }
 
     val adapter by lazy { Adapter() }
@@ -43,17 +54,145 @@ class HomeViewModel(application: Application) : AndroidViewModel(application),Fi
 
     /**
      * 正式启动
-     *
-     * @param packageRepository
      */
     fun start(packageRepository: PackageRepository) {
         repository = packageRepository
         viewModelScope.launch(Default) {
             pager.flow.collectLatest(adapter::submitData)
         }
+    }
+
+
+    sealed class Status {
+        object Nothings:Status()
+        class Uninstalling(val data: DisplayingData.App):Status()
+        class Failed(val data:CommandResult.Failed):Status()
+        class Success(val appName: String):Status()
+    }
+    val status by lazy { MutableSharedFlow<Status>() }
+
+    /**
+     * 是否需要备份
+     * @return 空为不需要 如果需要Backup的话就放个前path 就是/sdcard/abc/{apk}
+     */
+    // TODO: 2021/2/3 完成
+    private fun getBackupInfo():String?{
+        TODO("等待完成")
+    }
+
+    /**
+     * Get data path
+     *
+     * 判断data path是否需要删除
+     * @param path
+     * @return 空时不需要删除 有就删
+     */
+    // TODO: 2021/2/3 完成
+    private fun getDataPath(path: String):String? {
+        return null
+    }
+
+    /**
+     *
+     * @return 挂载用到的指令
+     */
+    // TODO: 2021/2/3 完成
+    private fun getMountString():String {
+        return "exit 0"
+    }
+
+    /**
+     * Get package name
+     *
+     * @return 一份package name : me.heizi.anyway
+     */
+    private fun getPackageName(applicationInfo: ApplicationInfo):String {
+        return ""
+    }
+
+    private fun uninstall(applicationInfo: ApplicationInfo,appName: String) =viewModelScope.launch(IO){
+        //判断是否为系统应用
+        val isSystemApp = !applicationInfo.isUserApp
+        //判断是否需要备份
+        val backupString = getBackupInfo()
+        //开始卸载
+        if (isSystemApp) {
+            val isBackup = backupString!=null
+            val data = getDataPath(applicationInfo.dataDir)
+            val result =uninstallByShell(
+                    sourceDirectory = applicationInfo.sourceDir,
+                    dataDirectory = data,
+                    backupPath = backupString,
+                    mountString = getMountString()
+            )
+            val record = UninstallRecord(
+                    name = appName,
+                    packageName = getPackageName(applicationInfo),
+                    source =  applicationInfo.sourceDir,
+                    data = data,
+                    isBackups = isBackup
+            )
+            //卸载完成
+            when(val r = result.await()) {
+                is CommandResult.Success -> onUninstallSuccess(r,record)
+                is CommandResult.Failed -> onUninstallFailed(r)
+            }
+        }else {
+            // TODO: 2021/2/3 卸载普通应用
+        }
+    }
+
+    /**
+     * 当卸载成功时:
+     *
+     * @param result
+     * @param record
+     */
+    private fun onUninstallSuccess(result: CommandResult.Success,record: UninstallRecord) {
 
     }
 
+    /**
+     * 当卸载失败时:
+     *
+     * 通知界面,展示[result]的错误.
+     */
+    private fun onUninstallFailed(result:CommandResult.Failed){
+
+    }
+
+    /**
+     * 被界面通知到了
+     *
+     * @param data
+     * @param position
+     */
+    private fun uninstall(data:DisplayingData.App,position: Int) {
+        repository.systemAppsFlow.value.removeAt(data.position)
+        adapter.refresh()
+        Log.i(TAG, "uninstall: $position,$data")
+        viewModelScope.launch(Default) {
+
+        }
+    }
+
+    /**
+     * 模糊搜索
+     *
+     * todo 降低功耗
+     * @param key
+     * @param path
+     * @param name
+     */
+    fun diff(key:String,path: String,name: String):Boolean {
+        if (path == key||name==key) return true
+        val keys = key.trim().toLowerCase(Locale.CHINA).split(" ","\n","/")
+        val names = name.trim().toLowerCase(Locale.CHINA).split(" ")
+        for (n in names) for (k in keys) if (n.contains(k) ) return true
+        val paths = path.trim().toLowerCase(Locale.CHINA).split(".","/","_","-")
+        for (p in paths) for (k in keys) if (p.contains(k)) return true
+        return false
+    }
 
     private val filter by lazy {
         object : Filter() {
@@ -64,22 +203,18 @@ class HomeViewModel(application: Application) : AndroidViewModel(application),Fi
             override fun publishResults(constraint: CharSequence?, results: FilterResults?) { viewModelScope.launch(Default) {
                 Log.i(TAG, "publishResults: called ")
                 pager.flow.collectLatest { data ->
+                    val time = System.currentTimeMillis()
                     val pagingData = if (constraint.isNullOrEmpty()) data
                     else {
-                        fun format(string: CharSequence) = string.toString().trim().encodeToByteArray().toString(charset = Charsets.UTF_8).toLowerCase(Locale.ROOT)
-                        val s = format(constraint)
+                        val s = constraint.toString()
                         data.filter {
-
-                            it is DisplayingData.DisplayingApp && (format(it.name).contains(s) || format(it.sDir).contains(s))
+                            it is DisplayingData.App && diff(s,it.sDir,it.name)
                         }
                     }
-                    Log.i(TAG, "publishResults: $constraint")
+                    Log.i(TAG, "publishResults: ${System.currentTimeMillis() - time}") 
                     adapter.submitData(pagingData)
-                    Log.i(TAG, "publishResults: updated")
                     cancel()
                 }
-//                pager.flow.singleOrNull()?.let { data -> //如果是空的咱直接emit
-//                }?: application.longToast("搜索失败")
             } }
 
         }
@@ -99,8 +234,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application),Fi
                             newItem.path == oldItem.path
                         } else false
                     }
-                    is DisplayingData.DisplayingApp -> {
-                        if (newItem is DisplayingData.DisplayingApp) {
+                    is DisplayingData.App -> {
+                        if (newItem is DisplayingData.App) {
                             newItem.position == oldItem.position
                         }else false
                     }
@@ -109,7 +244,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application),Fi
             override fun areContentsTheSame(oldItem: DisplayingData, newItem: DisplayingData): Boolean {
                 Log.i(TAG, "areContentsTheSame: called")
                 return if (oldItem is DisplayingData.Header || newItem is DisplayingData.Header) true
-                else oldItem as DisplayingData.DisplayingApp == newItem as DisplayingData.DisplayingApp
+                else oldItem as DisplayingData.App == newItem as DisplayingData.App
             }
         }
     }
@@ -129,9 +264,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application),Fi
      *
      * 列表展示的适配器
      */
-    inner class Adapter (
-
-    ) : PagingDataAdapter<DisplayingData, RecyclerView.ViewHolder>(differ) {
+    inner class Adapter : PagingDataAdapter<DisplayingData, RecyclerView.ViewHolder>(differ) {
 
         /**
          * [getItemViewType]根据[position] [getItem]判断返回[TITLE_VIEW]或者[APP_VIEW]
@@ -150,22 +283,25 @@ class HomeViewModel(application: Application) : AndroidViewModel(application),Fi
         private fun TitleViewHolder.bind(title:String) {
             layout.findViewById<TextView>(R.id.tv_item_title_only).text = title
         }
-        private fun AppViewHolder.bind(displayingData: DisplayingData.DisplayingApp) {
-            binding.data = displayingData
+
+        /**
+         * Bind
+         *
+         * 绑定时
+         */
+        private fun AppViewHolder.bind(data: DisplayingData.App,position: Int) {
+            binding.data = data
             binding.uninstallBtn.setOnClickListener {
-                TODO("等待本view model的卸载功能完善")
+                uninstall(data,position)
             }
         }
-
-
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             when (holder) {
                 is TitleViewHolder -> holder.bind((getItem(position)as DisplayingData.Header).path)
                 is AppViewHolder -> {
-                    val a = getItem(position) as DisplayingData.DisplayingApp
-                    holder.bind(a)
-//                check(a.position)
+                    val a = getItem(position) as DisplayingData.App
+                    holder.bind(a,position)
                 }
                 else -> throw TypeCastException("viewHolder at $position is not AppsViewHolder or TitleViewHolder !!")
             }

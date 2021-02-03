@@ -14,9 +14,9 @@ sealed class DisplayingData {
 
     companion object {
         fun ApplicationInfo.displaying(pm: PackageManager, position: Int)
-                = DisplayingApp(
+                = App(
                 icon = pm.getApplicationIcon(this),
-                name = pm.getApplicationLabel(this),
+                name = pm.getApplicationLabel(this).toString(),
                 sDir = sourceDir ,
                 position = position
         )
@@ -30,8 +30,8 @@ sealed class DisplayingData {
     ):DisplayingData()
 
 
-    data class DisplayingApp(
-            val name: CharSequence = "加载失败",
+    data class App(
+            val name: String = "加载失败",
             val icon: Drawable,
             val sDir:String,
             val position:Int
