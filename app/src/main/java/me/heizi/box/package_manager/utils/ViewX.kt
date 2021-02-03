@@ -62,3 +62,4 @@ fun Context.dialog(
 
 fun Context.longToast(message: String)
     = Toast.makeText(this,message,Toast.LENGTH_LONG).show()
+

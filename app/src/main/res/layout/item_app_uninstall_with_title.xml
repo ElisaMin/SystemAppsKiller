@@ -5,11 +5,8 @@
 
     <data>
         <variable
-            name="data"
-            type="me.heizi.box.package_manager.models.DisplayingData.App" />
-        <variable
-            name="vm"
-            type="me.heizi.box.package_manager.ui.home.HomeViewModel" />
+            name="viewModel"
+            type="me.heizi.box.package_manager.ui.home.NewAdapter.ViewHolder.ViewModel" />
 
     </data>
 
@@ -20,6 +17,21 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
+        <TextView
+            android:visibility="@{viewModel.showingTitle}"
+            android:text="@{viewModel.title}"
+            android:id="@+id/tv_item_title_only"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="8dp"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="@string/attachment_summary_off" />
+
 
         <ImageView
             android:id="@+id/imageView2"
@@ -27,28 +39,27 @@
             android:layout_height="48dp"
             android:layout_marginStart="16dp"
             android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            android:src="@{data.icon}"
+            android:src="@{viewModel.icon}"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_item_title_only"
             app:layout_constraintVertical_bias="0.0"
             tools:ignore="ContentDescription"
             tools:srcCompat="@tools:sample/avatars" />
 
         <TextView
-            android:text="@{data.name}"
             android:id="@+id/textView3"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
             android:layout_marginEnd="8dp"
+            android:text="@{viewModel.name}"
             android:textAppearance="@style/TextAppearance.AppCompat.Body1"
             app:layout_constraintEnd_toStartOf="@+id/uninstall_btn"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toEndOf="@+id/imageView2"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_item_title_only"
             tools:text="HeiziBox" />
 
         <TextView
@@ -58,7 +69,7 @@
             android:layout_marginTop="4dp"
             android:layout_marginEnd="8dp"
             android:layout_marginBottom="8dp"
-            android:text="@{data.sDir}"
+            android:text="@{viewModel.sDir}"
             android:textAppearance="@style/TextAppearance.AppCompat.Small"
             android:textSize="12sp"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -72,31 +83,24 @@
             android:id="@+id/uninstall_btn"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="6dp"
             android:layout_marginEnd="16dp"
-            android:layout_marginBottom="8dp"
             android:background="@drawable/circle"
-            android:contextClickable="true"
             android:clickable="true"
+            android:contextClickable="true"
+            android:focusable="true"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            android:focusable="true">
+            app:layout_constraintTop_toBottomOf="@+id/tv_item_title_only"
+            tools:ignore="SpeakableTextPresentCheck">
 
             <ImageView
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:layout_gravity="center_horizontal|center_vertical"
                 app:srcCompat="@drawable/ic_outline_delete_forever_24"
-                tools:ignore="ContentDescription"
-                app:tint="?android:textColorPrimary" />
-
-            <TextView
-                android:id="@+id/textView6"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@{Integer.toString(data.position)}"
-                tools:text="1" />
+                app:tint="?android:textColorPrimary"
+                tools:ignore="ContentDescription" />
         </FrameLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>

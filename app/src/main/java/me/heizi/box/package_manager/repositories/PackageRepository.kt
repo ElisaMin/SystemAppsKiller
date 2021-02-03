@@ -12,10 +12,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import me.heizi.box.package_manager.Application
 import me.heizi.box.package_manager.Application.Companion.TAG
-import me.heizi.box.package_manager.models.DisplayingData
 import me.heizi.box.package_manager.utils.longToast
 import java.util.*
-import kotlin.collections.HashMap
 import kotlin.collections.set
 import kotlin.math.roundToInt
 
@@ -35,18 +33,17 @@ class PackageRepository(
     private val _systemAppsFlow by lazy { MutableStateFlow(systemApps) }
     val systemAppsFlow get() = _systemAppsFlow.asStateFlow()
 
+
     init {
         scope.launch(IO) {
             val time = _systemAppsFlow.value.sort().await()
-            val all = systemAppsFlow.value.size
-
+            val all = _systemAppsFlow.value.size
             val score = (((time*2).toFloat()/all)*100).roundToInt()
             launch(Main) {
                 context.longToast("排序完成，本次排序花费${time}ms。累赘指数$score。")
             }
 
         }
-        Log.i(TAG, "all app: ${systemAppsFlow.value.size}")
         Log.i(TAG, "init: sorting")
     }
 
@@ -57,24 +54,10 @@ class PackageRepository(
      * @param info
      * @return 是否一致
      */
-    private fun diff(data: DisplayingData.App,info:ApplicationInfo):Boolean =
-        (data.name == pm.getApplicationLabel(info).toString() && data.sDir == info.sourceDir)
-
-    @Suppress("DeferredResultUnused")
-    fun reductionToApplication(data:DisplayingData.App):ApplicationInfo? {
-        //根据data获取item
-        val applicationInfo = systemAppsFlow.value[data.position]
-        //比对
-        val isSameItem = diff(data,applicationInfo)
-        //如果一致返回
-        if (isSameItem) return applicationInfo
-        //不一致查找
-        for (i in systemAppsFlow.value) if (diff(data,i)) return i
-        //找不到则刷新
-        Log.e(TAG, "reductionToApplication: $data not found")
-        systemApps.sort()
-        return null
-    }
+//    private fun diff(data: DisplayingData.App,info:ApplicationInfo):Boolean =
+//        (data.name == pm.getApplicationLabel(info).toString() && data.sDir == info.sourceDir)
+//
+//
 
 
     /**
@@ -126,10 +109,9 @@ class PackageRepository(
         //记录时间
         val dealTime = System.currentTimeMillis() - time
         Log.i(TAG, "sort: $dealTime")
-        _systemAppsFlow.emit(result.toList())
+        _systemAppsFlow.emit(result)
         dealTime
     }
-
     companion object {
         val withApk by lazy { """(/[^/]+)+(/[^/]+\.apk)""".toRegex() }
         val hasNoApk by lazy { """[/\w+]+""".toRegex() }

@@ -2,17 +2,14 @@ package me.heizi.box.package_manager.ui.home
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.util.Log
-import android.view.*
-import android.widget.TextView
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import android.view.View
 import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
-import androidx.paging.LoadState
-import androidx.paging.LoadStateAdapter
-import androidx.recyclerview.widget.RecyclerView
-import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.R
 import me.heizi.box.package_manager.SingletonActivity.Companion.parent
 import me.heizi.box.package_manager.databinding.HomeFragmentBinding
@@ -26,6 +23,8 @@ class HomeFragment : Fragment(R.layout.home_fragment) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
         findNavController().backStack.clear()
+        parent.viewModel.packageRepository.updateFlowAfterCurrentListChanged()
+
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -33,7 +32,6 @@ class HomeFragment : Fragment(R.layout.home_fragment) {
         binding.vm = viewModel
         parent.setSupportActionBar(binding.toolbar)
         viewModel.start(parent.viewModel.packageRepository,parent.preferences)
-        binding.homeList.adapter = viewModel.adapter.withLoadStateFooter(getListBottomLoadingView())
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -46,24 +44,6 @@ class HomeFragment : Fragment(R.layout.home_fragment) {
     }
 
 
-    val textView by lazy { TextView(context) }
-    val viewHolder by lazy { object :RecyclerView.ViewHolder(textView) {} }
-    private fun getListBottomLoadingView():LoadStateAdapter<RecyclerView.ViewHolder> {
-        return object  :LoadStateAdapter<RecyclerView.ViewHolder>() {
-            override fun onBindViewHolder(holder: RecyclerView.ViewHolder, loadState: LoadState) {
-                textView.text = loadState.toString()
-                Log.i(TAG, "onBindViewHolder: $loadState")
-            }
-            override fun onCreateViewHolder(
-                parent: ViewGroup,
-                loadState: LoadState
-            ): RecyclerView.ViewHolder {
-                Log.i(TAG, "onCreateViewHolder: $loadState")
-                return viewHolder
-            }
-
-        }
-    }
 
     /**
      * Get search view
@@ -91,8 +71,8 @@ class HomeFragment : Fragment(R.layout.home_fragment) {
      */
     private fun onUninstallFailed() {
     }
-    private fun showMessageThatDismissAfterClick(errorMessage:String ) {
-        errorMessage
-    }
+//    private fun showMessageThatDismissAfterClick(errorMessage:String ) {
+//        errorMessage
+//    }
 
 }
