@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.util.Log
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import kotlinx.coroutines.flow.StateFlow
 import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.models.DisplayingData
 import me.heizi.box.package_manager.models.DisplayingData.Companion.displaying
@@ -23,26 +24,35 @@ import me.heizi.box.package_manager.repositories.PackageRepository.Companion.get
  *
  * Value是啥?
  * value拿来给屏幕展示的数据[DisplayingData]]
- *
- * todo 添加可过滤功能
  */
 class AppsPagingSource(
         private val pm: PackageManager,
-        private val source:List<ApplicationInfo>,
+        val appsFlow:StateFlow<List<ApplicationInfo>>
 ): PagingSource<Int, DisplayingData>() {
 
 
-    init {
-
+    companion object {
+        const val LOAD_SIZE = 10
     }
 
-    override fun getRefreshKey(state: PagingState<Int, DisplayingData>): Int {
-        val result = state.anchorPosition?.let {
-            (it/state.config.pageSize)
-        }?:0
-        Log.i(TAG, "getRefreshKey: positions${state.anchorPosition};page:$result")
-        return  result
-    }
+    private val source:List<ApplicationInfo> get() =  appsFlow.value
+//    lateinit var source:List<ApplicationInfo>
+//    var a = true
+//    init {
+//        MainScope().launch(Dispatchers.Unconfined) {
+//            appsFlow.collectLatest {
+//                Log.i(TAG, "source: changed")
+//                source = it
+//                if (a) {
+//                    a =false
+//                }else {
+//                    load(LoadParams.Refresh(0,30,false))
+//                }
+//            }
+//        }
+//    }
+
+    override fun getRefreshKey(state: PagingState<Int, DisplayingData>): Int = 0
 
     private suspend fun MutableList<DisplayingData>.prepend(page: Int,size: Int):Int?{
         Log.i(TAG, "load: 向前")
@@ -124,13 +134,17 @@ class AppsPagingSource(
         var prevKey:Int? = thisKey-1
         if (thisKey ==0) prevKey = null
 
+
+
         when(params) {
             /**
              * 获取新的List并执行Append操作
              */
             is LoadParams.Refresh -> {
                 Log.i(TAG, "load: 刷新中")
-                nextKey =  list.append(thisKey,params.loadSize)
+                prevKey = null
+                nextKey = 3
+                list.append(thisKey,params.loadSize)
                 Log.i(TAG, "load: 刷新完成")
             }
             is LoadParams.Append -> {
@@ -144,6 +158,7 @@ class AppsPagingSource(
             }
         }
         Log.i(TAG, "load: result size ${list.size}")
+        Log.i(TAG, "load: keys : $prevKey $thisKey $nextKey")
 
         return LoadResult.Page(list,prevKey ,nextKey,)
     }

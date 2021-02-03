@@ -32,7 +32,7 @@ class HomeFragment : Fragment(R.layout.home_fragment) {
         super.onViewCreated(view, savedInstanceState)
         binding.vm = viewModel
         parent.setSupportActionBar(binding.toolbar)
-        viewModel.start(parent.viewModel.packageRepository)
+        viewModel.start(parent.viewModel.packageRepository,parent.preferences)
         binding.homeList.adapter = viewModel.adapter.withLoadStateFooter(getListBottomLoadingView())
     }
 
@@ -82,6 +82,17 @@ class HomeFragment : Fragment(R.layout.home_fragment) {
             }
         })
         return searchView
+    }
+
+    /**
+     * On uninstall failed
+     *
+     * 在卸载失败时弹出SnackBar 提示错误
+     */
+    private fun onUninstallFailed() {
+    }
+    private fun showMessageThatDismissAfterClick(errorMessage:String ) {
+        errorMessage
     }
 
 }

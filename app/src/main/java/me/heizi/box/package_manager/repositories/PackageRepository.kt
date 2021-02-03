@@ -16,6 +16,7 @@ import me.heizi.box.package_manager.models.DisplayingData
 import me.heizi.box.package_manager.utils.longToast
 import java.util.*
 import kotlin.collections.HashMap
+import kotlin.collections.set
 import kotlin.math.roundToInt
 
 /**
@@ -33,7 +34,6 @@ class PackageRepository(
 
     private val _systemAppsFlow by lazy { MutableStateFlow(systemApps) }
     val systemAppsFlow get() = _systemAppsFlow.asStateFlow()
-
 
     init {
         scope.launch(IO) {

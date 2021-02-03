@@ -19,16 +19,20 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Unconfined
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import me.heizi.box.package_manager.Application.Companion.TAG
+import me.heizi.box.package_manager.Application.Companion.app
 import me.heizi.box.package_manager.R
 import me.heizi.box.package_manager.dao.entities.UninstallRecord
 import me.heizi.box.package_manager.databinding.ItemAppUninstallBinding
 import me.heizi.box.package_manager.models.DisplayingData
+import me.heizi.box.package_manager.models.PreferencesMapper
 import me.heizi.box.package_manager.repositories.AppsPagingSource
+import me.heizi.box.package_manager.repositories.AppsPagingSource.Companion.LOAD_SIZE
 import me.heizi.box.package_manager.repositories.PackageRepository
 import me.heizi.box.package_manager.utils.isUserApp
 import me.heizi.box.package_manager.utils.uninstallByShell
@@ -36,30 +40,46 @@ import me.heizi.kotlinx.shell.CommandResult
 import java.util.*
 
 
-class HomeViewModel(application: Application) : AndroidViewModel(application),Filterable {
+class HomeViewModel( application: Application) : AndroidViewModel(application),Filterable {
 
     private lateinit var repository: PackageRepository
+    private lateinit var mapper: PreferencesMapper
+    private lateinit var currentPagingSource:AppsPagingSource
     private val pager by lazy {
         Pager(
             PagingConfig(
-                pageSize = 10,
+                pageSize = LOAD_SIZE,
                 prefetchDistance = 30
             )
-        ) { AppsPagingSource(application.packageManager,repository.systemAppsFlow.value) }
-
+        ) {
+            currentPagingSource = AppsPagingSource(app.packageManager,repository.systemAppsFlow)
+            currentPagingSource
+        }
     }
 
     val adapter by lazy { Adapter() }
 
-
     /**
      * 正式启动
      */
-    fun start(packageRepository: PackageRepository) {
+    fun start(packageRepository: PackageRepository,mapper: PreferencesMapper) {
         repository = packageRepository
+        this.mapper = mapper
         viewModelScope.launch(Default) {
             pager.flow.collectLatest(adapter::submitData)
         }
+        viewModelScope.launch(Unconfined) {
+            repository.systemAppsFlow.collectLatest {
+                Log.i(TAG, "start: changed")
+                adapter.refresh()
+            }
+        }
+        viewModelScope.launch(Unconfined) {
+            adapter.loadStateFlow.collectLatest {
+                Log.i(TAG, "load state: $it")
+            }
+        }
+
     }
 
 
@@ -92,23 +112,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application),Fi
         return null
     }
 
-    /**
-     *
-     * @return 挂载用到的指令
-     */
-    // TODO: 2021/2/3 完成
-    private fun getMountString():String {
-        return "exit 0"
-    }
-
-    /**
-     * Get package name
-     *
-     * @return 一份package name : me.heizi.anyway
-     */
-    private fun getPackageName(applicationInfo: ApplicationInfo):String {
-        return ""
-    }
 
     private fun uninstall(applicationInfo: ApplicationInfo,appName: String) =viewModelScope.launch(IO){
         //判断是否为系统应用
@@ -119,15 +122,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application),Fi
         if (isSystemApp) {
             val isBackup = backupString!=null
             val data = getDataPath(applicationInfo.dataDir)
-            val result =uninstallByShell(
+            val result = uninstallByShell(
                     sourceDirectory = applicationInfo.sourceDir,
                     dataDirectory = data,
                     backupPath = backupString,
-                    mountString = getMountString()
+                    mountString = mapper.mountString!!
             )
             val record = UninstallRecord(
                     name = appName,
-                    packageName = getPackageName(applicationInfo),
+                    packageName = applicationInfo.packageName,
                     source =  applicationInfo.sourceDir,
                     data = data,
                     isBackups = isBackup
@@ -161,15 +164,17 @@ class HomeViewModel(application: Application) : AndroidViewModel(application),Fi
 
     }
 
+
     /**
-     * 被界面通知到了
+     * 被界面通知到了调用的卸载
      *
      * @param data
      * @param position
      */
     private fun uninstall(data:DisplayingData.App,position: Int) {
         repository.systemAppsFlow.value.removeAt(data.position)
-        adapter.refresh()
+//        currentPagingSource.invalidate()
+        adapter.notifyItemRemoved(position)
         Log.i(TAG, "uninstall: $position,$data")
         viewModelScope.launch(Default) {
 
@@ -283,6 +288,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application),Fi
         private fun TitleViewHolder.bind(title:String) {
             layout.findViewById<TextView>(R.id.tv_item_title_only).text = title
         }
+
+
+
 
         /**
          * Bind
