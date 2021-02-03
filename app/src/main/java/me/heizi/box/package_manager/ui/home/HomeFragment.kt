@@ -23,7 +23,6 @@ class HomeFragment : Fragment(R.layout.home_fragment) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
         findNavController().backStack.clear()
-        parent.viewModel.packageRepository.updateFlowAfterCurrentListChanged()
 
     }
 
@@ -57,7 +56,7 @@ class HomeFragment : Fragment(R.layout.home_fragment) {
                 return false
             }
             override fun onQueryTextChange(newText: String?): Boolean {
-                viewModel.filter.filter(newText)
+//                viewModel.filter.filter(newText)
                 return true
             }
         })

@@ -2,14 +2,17 @@ package me.heizi.box.package_manager.ui.home
 
 import android.app.Application
 import android.content.pm.ApplicationInfo
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.Application.Companion.app
 import me.heizi.box.package_manager.dao.entities.UninstallRecord
-import me.heizi.box.package_manager.models.DisplayingData
 import me.heizi.box.package_manager.models.PreferencesMapper
 import me.heizi.box.package_manager.repositories.PackageRepository
 import me.heizi.box.package_manager.utils.isUserApp
@@ -24,12 +27,22 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private lateinit var repository: PackageRepository
 
-    val adapter = NewAdapter(
+    val adapter by lazy {
+        NewAdapter(
             application.packageManager,
             viewModelScope,
             repository.systemAppsFlow,
             ::uninstall
-    )
+        ).apply {
+            this.registerAdapterDataObserver(adapterDataObserver)
+        }
+    }
+    private val adapterDataObserver = object : RecyclerView.AdapterDataObserver() {
+        override fun onChanged() {
+            super.onChanged()
+            Log.i(TAG, "onChanged: list")
+        }
+    }
 
     /**
      * 次构造函数
@@ -49,10 +62,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * Starts
      *
-     * 开始收集展示pager的东西
+     * 开始收集
      */
     private fun starts() = viewModelScope.launch(Dispatchers.Unconfined) {
-        TODO()
+        repository.systemAppsFlow.collectLatest {
+            adapter.notifyDataSetChanged()
+        }
     }
 
 
@@ -69,16 +84,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
 
-    /**
-     * 被界面通知到了调用的卸载
-     *
-     * @param data
-     * @param position
-     */
-    // FIXME: 2021/2/3 remove item不行
-    private fun uninstall(data:DisplayingData.App,position: Int) {
-
-    }
 
     /**
      * 被界面通知到了调用的卸载

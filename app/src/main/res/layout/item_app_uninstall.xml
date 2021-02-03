@@ -6,7 +6,7 @@
     <data>
         <variable
             name="data"
-            type="me.heizi.box.package_manager.models.DisplayingData.App" />
+            type="me.heizi.box.package_manager.ui.home.NewAdapter.ViewHolder.ViewModel" />
         <variable
             name="vm"
             type="me.heizi.box.package_manager.ui.home.HomeViewModel" />
@@ -91,12 +91,6 @@
                 tools:ignore="ContentDescription"
                 app:tint="?android:textColorPrimary" />
 
-            <TextView
-                android:id="@+id/textView6"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@{Integer.toString(data.position)}"
-                tools:text="1" />
         </FrameLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
