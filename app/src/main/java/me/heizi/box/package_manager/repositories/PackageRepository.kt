@@ -1,18 +1,25 @@
 package me.heizi.box.package_manager.repositories
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.graphics.drawable.Drawable
 import android.util.Log
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import me.heizi.box.package_manager.Application
 import me.heizi.box.package_manager.Application.Companion.TAG
+import me.heizi.box.package_manager.dao.DB.Companion.updateDB
+import me.heizi.box.package_manager.dao.entities.UninstallRecord
+import me.heizi.box.package_manager.models.PreferencesMapper
+import me.heizi.box.package_manager.ui.home.AdapterService
 import me.heizi.box.package_manager.utils.longToast
+import me.heizi.kotlinx.shell.CommandResult
+import me.heizi.kotlinx.shell.su
 import java.util.*
 import kotlin.collections.set
 import kotlin.math.roundToInt
@@ -25,19 +32,35 @@ import kotlin.math.roundToInt
  */
 class PackageRepository(
     private val scope: CoroutineScope,
+    private val mapper: PreferencesMapper,
     context: Context
 ) {
+
+    val systemAppsFlow get() = _systemAppsFlow.asStateFlow()
+    /**
+     * Key:PackageName Value:PrevPath
+     */
+    val prevPathIndexed:Map<String,String> get() = _prevPathIndexed
+    /**
+     * Key:PackageName Value:Labels
+     */
+    val labels:Map<String,String> get() = _labels
+
+
+    private val backupPaths = context.getExternalFilesDir("backup")
     private val pm:PackageManager = context.packageManager
     private val systemApps get()  = pm.getInstalledApplications(PackageManager.MATCH_SYSTEM_ONLY)
-
     private val _systemAppsFlow by lazy { MutableStateFlow(systemApps) }
-    val systemAppsFlow get() = _systemAppsFlow.asStateFlow()
+    private val _prevPathIndexed = HashMap<String,String>()
+    private val _labels = HashMap<String,String>()
+    private val _uninstallStatues = MutableSharedFlow<UninstallStatues>()
 
-
-
-
+    /**
+     * 卸载状态
+     */
+    val uninstallStatues get() = _uninstallStatues.asSharedFlow()
     init {
-        // FIXME: 2021/2/5 测试在这里一下
+        //获取package label
         scope.launch(Default) {
             _systemAppsFlow.value.forEach {
                 _labels[it.packageName] =  pm.getApplicationLabel(it).toString()
@@ -50,16 +73,108 @@ class PackageRepository(
             launch(Main) {
                 context.longToast("加载完成，本次加载花费${time}ms。累赘指数$score。")
             }
-            launch(Default) {
-                _systemAppsFlow.value.forEach {
-
-                }
-            }
-
-
         }
-        Log.i(TAG, "init: sorting")
     }
+
+
+    val defaultAdapterService = object:AdapterService {
+        override val allAppF: StateFlow<MutableList<ApplicationInfo>>
+            get() = systemAppsFlow
+        override fun getAppLabel(applicationInfo: ApplicationInfo): String
+            = getApplicationLabel(applicationInfo)
+        override fun getAppIcon(applicationInfo: ApplicationInfo): Drawable
+            = pm.getApplicationIcon(applicationInfo)
+        override fun getPrevPath(applicationInfo: ApplicationInfo): String
+            = prevPathIndexed.getOrDefault(applicationInfo.packageName,"分组错误")
+
+        override fun uninstall(applicationInfo: ApplicationInfo, position: Int) {
+            uninstallSystemApp(position = position,applicationInfo = applicationInfo)
+        }
+    }
+
+    private fun getApplicationLabel(applicationInfo: ApplicationInfo) = labels[applicationInfo.packageName] ?: pm.getApplicationLabel(applicationInfo).toString()
+
+    @SuppressLint("SdCardPath")
+    fun getDataPath(applicationInfo: ApplicationInfo, isBackup:Boolean?):String? {
+        return if (isBackup==true) {
+            applicationInfo.dataDir.takeIf { it!="/data/user_de/0/"||it!="/data/user/0/" }
+        } else null
+    }
+
+    /**
+     * Uninstall system app
+     *
+     * 有三种模式可以卸载
+     * 暴力删除:remove
+     * 移动备份:move path
+     * 改名备份:mv .apk .apk.bak
+     */
+    fun uninstallSystemApp(
+        applicationInfo: ApplicationInfo,
+        position: Int
+    ) = scope.launch(Default) {
+        val sb = StringBuilder()
+        fun error(): Nothing = throw IllegalArgumentException("not normally path")
+        fun line(block:()->String) { sb.appendLine(block()) }
+
+        //准备工作
+        val isBackup  = mapper.isBackup == true
+        val backupPath = mapper.backupPath ?: backupPaths?.absolutePath
+        val sDir = applicationInfo.sourceDir
+        val dDir = getDataPath(applicationInfo,isBackup)
+        //挂载
+        line { mapper.mountString ?: Application.DEFAULT_MOUNT_STRING }
+        //添加权限
+        line { "chmod 777 $sDir" }
+        //如果需要备份判断是否为备份
+        when {
+            isBackup && !backupPath.isNullOrEmpty() -> { // 移动备份
+                val short = when {
+                    sDir.matches(withApk) -> sDir.split("/").takeLast(2).joinToString("/")
+                    sDir.matches(hasNoApk) -> sDir.split("/").last()
+                    else -> error()
+                }
+                line { "mv -f $sDir $backupPath/$short" }
+            } isBackup -> { //重命名备份
+                if (!sDir.matches(withApk)) error()
+                line { "mv $sDir $sDir.bak" }
+            } else ->  { //无需备份
+                line { "rm -rf $sDir" }
+            }
+        }
+        dDir?.let {
+            line { "rm -f $it" }
+        }
+        val result = scope.su(sb.toString())
+
+        val record = UninstallRecord (
+            name = getApplicationLabel(applicationInfo),
+            packageName = applicationInfo.packageName,
+            source =  sDir,
+            data = dDir,
+            isBackups = isBackup
+        )
+
+        scope.launch(IO) {
+            when (val r = result.await()) {
+                is CommandResult.Success -> {
+                    updateDB { record.add() }
+                    UninstallStatues.Success(position)
+                }
+                is CommandResult.Failed -> UninstallStatues.Failed(r)
+            }.let {
+                _uninstallStatues.emit(it)
+            }
+        }
+    }
+    /**
+     * 一个常见的状态SealedClass
+     */
+    sealed class UninstallStatues {
+        class Success(val position:Int) : UninstallStatues()
+        class Failed(val result: CommandResult.Failed) : UninstallStatues()
+    }
+
 
 
     /**
@@ -117,22 +232,16 @@ class PackageRepository(
         dealTime
     }
     companion object {
+
+
+
         val withApk by lazy { """(/[^/]+)+(/[^/]+\.apk)""".toRegex() }
         val hasNoApk by lazy { """[/\w+]+""".toRegex() }
         private val paths by lazy { """/([^/]+)+""".toRegex() }
 
 
-        /**
-         * Key:PackageName Value:PrevPath
-         */
-        private val _prevPathIndexed = HashMap<String,String>()
-        val prevPathIndexed:Map<String,String> get() = _prevPathIndexed
-
-        /**
-         * Key:PackageName Value:Labels
-         */
-        private val _labels = HashMap<String,String>()
-        val labels:Map<String,String> get() = _labels
+        val ApplicationInfo.isUserApp
+            get() = (flags and ApplicationInfo.FLAG_SYSTEM <= 0)
 
 
         /**
@@ -153,18 +262,13 @@ class PackageRepository(
                 val l2 = paths.findAll(prev).map {
                     it.value.replace("/","").takeIf { it.isNotEmpty() }
                 }.filter { it!=null }.toList()
-
                 val c1 = l1.size
                 val c2 = l2.size
-
                 notSame = (c1 != c2)
-
-
                 if (!notSame)
                     repeat((if (c1 < c2) c1 else c2)-1) { i->
                         if (l1[i] != l2[i]) notSame = true}
             }
-
             notSame
         }
 

@@ -9,8 +9,10 @@ class Application: App() {
     companion object {
         const val TAG = "HeiziTool-Uninstaller"
         const val DEFAULT_MOUNT_STRING = "mount -o rw,remount / \nchmod 777 /"
+        const val PREFERENCES = "UNINSTALLER_CONFIG"
         val AndroidViewModel.app get() = getApplication<Application>()
     }
+
 
     override fun onCreate() {
         super.onCreate()

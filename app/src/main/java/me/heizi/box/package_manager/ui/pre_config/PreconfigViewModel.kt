@@ -14,7 +14,6 @@ import kotlinx.coroutines.launch
 import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.utils.set
 import me.heizi.box.package_manager.utils.unMutable
-import me.heizi.box.package_manager.utils.uninstallByShell
 import me.heizi.kotlinx.shell.CommandResult
 import me.heizi.kotlinx.shell.CommandResult.Failed
 import me.heizi.kotlinx.shell.CommandResult.Success
@@ -193,8 +192,6 @@ ${failed.processingMessage.takeIf { it.isNotEmpty() } ?:"无"}
                 isErrorNeeding = true
             ).await()
 
-
-
         if (!remove) {
             Log.i(TAG, "testRW: add")
             viewModelScope.launch(IO) {
@@ -216,29 +213,16 @@ ${failed.processingMessage.takeIf { it.isNotEmpty() } ?:"无"}
             Log.i(TAG, "testRW: remove")
             viewModelScope.launch(IO) {
                 val mount = mountString.value
-                viewModelScope.uninstallByShell(
-                        path,
-                        mountString = mount
+                viewModelScope.su(
+                    mount,
+                    "chmod 777 $path",
+                    "rm -f $path"
                 ).await().let(block).let(::updateStatus)
             }
         }
-
-//        """ echo start
-//            ${mountString.value}
-//            if [ -e $path ];then rm -rf $path; fi
-//            mkdir -rf $path
-//            echo 0>>$path/testRw
-//            cat $path/testRw
-//            mkdir -rf $path
-//        """.lines().map { it.trim() }.toTypedArray().let {
-//            viewModelScope.launch(IO) {
-//                updateStatus(su(*it, dispatcher =  Unconfined).await().let(block))
-//            }
-//        }
     }
     
     fun onInputSubmit() {
-        // TODO: 2021/2/1 弹出Dialog输入或者直接输入
         updateStatus(Status.CheckSystemWritable)
 
     }

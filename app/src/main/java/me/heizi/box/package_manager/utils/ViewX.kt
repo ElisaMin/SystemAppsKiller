@@ -24,12 +24,12 @@ sealed class DialogBtns(val text:String,val icon:Drawable?=null,val onClick:Dial
  */
 @MainThread
 fun Context.dialog(
+    vararg btns: DialogBtns,
     title:String?=null,
     view: View?=null,
     message:String?=null,
     cancelable: Boolean = true,
     show:Boolean = true,
-    vararg btns: DialogBtns
 ) =
     AlertDialog.Builder(this).run {
         setTitle(title)

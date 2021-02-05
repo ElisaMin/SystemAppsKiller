@@ -57,7 +57,7 @@ class PreconfigFragment : Fragment(R.layout.preconfig_fragment) {
                 when(it) {
                     is PreconfigViewModel.Status.Done -> {
                         launch(IO) {
-                            parent.preferences.mountString = viewModel.mountString.value
+                            parent.viewModel.preferences.mountString = viewModel.mountString.value
                         }
                         toHome()
                     }

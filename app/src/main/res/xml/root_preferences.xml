@@ -16,6 +16,5 @@
     </PreferenceCategory>
     <PreferenceCategory
         app:title="关于">
-
     </PreferenceCategory>
 </PreferenceScreen>

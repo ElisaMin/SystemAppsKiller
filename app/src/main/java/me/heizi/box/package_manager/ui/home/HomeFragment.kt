@@ -10,6 +10,8 @@ import androidx.appcompat.widget.SearchView
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import kotlinx.coroutines.Dispatchers.Unconfined
@@ -18,11 +20,18 @@ import kotlinx.coroutines.launch
 import me.heizi.box.package_manager.R
 import me.heizi.box.package_manager.SingletonActivity.Companion.parent
 import me.heizi.box.package_manager.databinding.HomeFragmentBinding
+import me.heizi.box.package_manager.repositories.PackageRepository
 import me.heizi.box.package_manager.utils.clickSnackBar
 import me.heizi.box.package_manager.utils.longSnackBar
 
 class HomeFragment : Fragment(R.layout.home_fragment) {
-    private val viewModel:HomeViewModel by viewModels()
+    private val viewModel:HomeViewModel by viewModels {
+        object: ViewModelProvider.Factory {
+            override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+                return modelClass.getConstructor(PackageRepository::class.java).newInstance(parent.viewModel.packageRepository)
+            }
+        }
+    }
     private val binding by lazy { HomeFragmentBinding.bind(requireView()) }
 
     @SuppressLint("RestrictedApi")
@@ -37,14 +46,15 @@ class HomeFragment : Fragment(R.layout.home_fragment) {
         binding.vm = viewModel
         binding.lifecycleOwner = viewLifecycleOwner
         parent.setSupportActionBar(binding.toolbar)
-        viewModel.start(parent.viewModel.packageRepository,parent.preferences)
+
         lifecycleScope.launch(Unconfined) {
-            viewModel.uninstallStatues.collectLatest { s ->
+            parent.viewModel.packageRepository.uninstallStatues.collectLatest { s ->
                 when(s) {
-                    is HomeViewModel.UninstallStatues.Success -> {
+                    is PackageRepository.UninstallStatues.Success -> {
                         binding.longSnackBar("卸载成功!")
+                        viewModel.adapter.removeAt(s.position)
                     }
-                    is HomeViewModel.UninstallStatues.Failed -> {
+                    is PackageRepository.UninstallStatues.Failed -> {
                         binding.clickSnackBar(
                             message =
                             """|卸载失败:${s.result.code}
@@ -56,6 +66,7 @@ class HomeFragment : Fragment(R.layout.home_fragment) {
                         }
                     }
                 }
+                viewModel.stopProcess()
             }
         }
     }
@@ -66,6 +77,13 @@ class HomeFragment : Fragment(R.layout.home_fragment) {
         search.actionView = getSearchView()
     }
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when(item.itemId) {
+            R.id.launch_settings_menu -> {}
+            R.id.launch_export_menu -> {}
+            R.id.launch_help_menu -> {}
+            R.id.launch_input_menu -> {}
+            R.id.search_menu_home -> {}
+        }
         return super.onOptionsItemSelected(item)
     }
 
