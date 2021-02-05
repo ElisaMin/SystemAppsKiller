@@ -26,6 +26,7 @@ class HomeViewModel(
         }
     }
 
+
     val processing get() = _processing.asStateFlow()
     private val _processing = MutableStateFlow(true)
 
@@ -41,8 +42,6 @@ class HomeViewModel(
             }
         }
     }
-
-
 
     fun stopProcess() {
         _processing set false

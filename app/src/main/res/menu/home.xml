@@ -2,12 +2,12 @@
 <menu xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:ignore="HardcodedText,AlwaysShowAction"
-    xmlns:android="http://schemas.android.com/apk/res/android">
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    >
 
     <item
         android:id="@+id/launch_input_menu"
         android:icon="@drawable/ic_outline_cleaning_services_24"
-        android:iconTint="?android:textColorPrimary"
         android:title="导入"
         app:showAsAction="ifRoom" />
     <item

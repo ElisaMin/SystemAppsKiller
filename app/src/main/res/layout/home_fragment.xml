@@ -23,7 +23,8 @@
             android:backgroundTintMode="add"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
-            <androidx.appcompat.widget.Toolbar
+            <com.google.android.material.appbar.MaterialToolbar
+                app:menu="@menu/home"
                 android:id="@+id/toolbar"
                 app:title="@string/app_name"
                 android:layout_width="match_parent"
@@ -31,6 +32,7 @@
                 android:backgroundTint="#00ffffff"
                 android:background="#00ffffff"
                 android:backgroundTintMode="add"
+                app:titleTextColor="?android:textColorPrimary"
                 android:minHeight="?attr/actionBarSize" />
 
             <ProgressBar

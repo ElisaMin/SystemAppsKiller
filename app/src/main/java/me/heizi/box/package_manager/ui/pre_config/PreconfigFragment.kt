@@ -69,12 +69,12 @@ class PreconfigFragment : Fragment(R.layout.preconfig_fragment) {
 
     private fun toHome() {
         lifecycleScope.launch (Dispatchers.Main){
-            findNavController().navigate(R.id.action_preconfigFragment_to_homeFragment)
+            findNavController().navigate(R.id.homeFragment)
         }
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if(false) {
+        if(parent.viewModel.preferences.mountString == null) {
             launchOnFirstTime()
         } else {
             toHome()

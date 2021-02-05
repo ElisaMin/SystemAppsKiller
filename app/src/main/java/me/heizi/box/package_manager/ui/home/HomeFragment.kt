@@ -2,12 +2,12 @@ package me.heizi.box.package_manager.ui.home
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.widget.SearchView
-import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModel
@@ -17,11 +17,13 @@ import androidx.navigation.fragment.findNavController
 import kotlinx.coroutines.Dispatchers.Unconfined
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.R
 import me.heizi.box.package_manager.SingletonActivity.Companion.parent
 import me.heizi.box.package_manager.databinding.HomeFragmentBinding
 import me.heizi.box.package_manager.repositories.PackageRepository
 import me.heizi.box.package_manager.utils.clickSnackBar
+import me.heizi.box.package_manager.utils.dialog
 import me.heizi.box.package_manager.utils.longSnackBar
 
 class HomeFragment : Fragment(R.layout.home_fragment) {
@@ -38,14 +40,11 @@ class HomeFragment : Fragment(R.layout.home_fragment) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
-        findNavController().backStack.clear()
+//        findNavController().backStack.clear()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.vm = viewModel
-        binding.lifecycleOwner = viewLifecycleOwner
-        parent.setSupportActionBar(binding.toolbar)
 
         lifecycleScope.launch(Unconfined) {
             parent.viewModel.packageRepository.uninstallStatues.collectLatest { s ->
@@ -55,14 +54,20 @@ class HomeFragment : Fragment(R.layout.home_fragment) {
                         viewModel.adapter.removeAt(s.position)
                     }
                     is PackageRepository.UninstallStatues.Failed -> {
-                        binding.clickSnackBar(
-                            message =
+                        Log.i(TAG, "onViewCreated: ${s.result}")
+                        val message =
                             """|卸载失败:${s.result.code}
-                               |原因:${s.result.errorMessage ?:"无"}
+                               |原因:${s.result.errorMessage ?: "无"}
                                |过程:${s.result.processingMessage} 
                             """.trimMargin()
+                        binding.clickSnackBar(
+                            message = message, "查看详细"
+
                         ) {
-                            it.isVisible = false
+                            requireContext().dialog(
+                                title = "详细",
+                                message = message
+                            )
                         }
                     }
                 }
@@ -71,20 +76,37 @@ class HomeFragment : Fragment(R.layout.home_fragment) {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        Log.i(TAG, "onResume: home fragment")
+        binding.vm = viewModel
+        binding.lifecycleOwner = viewLifecycleOwner
+        parent.setSupportActionBar(binding.toolbar)
+    }
+
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.home,menu)
         val search = menu.findItem(R.id.search_menu_home)
         search.actionView = getSearchView()
     }
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when(item.itemId) {
-            R.id.launch_settings_menu -> {}
-            R.id.launch_export_menu -> {}
-            R.id.launch_help_menu -> {}
-            R.id.launch_input_menu -> {}
-            R.id.search_menu_home -> {}
+        return when(item.itemId) {
+            R.id.launch_settings_menu -> {
+                findNavController().navigate(R.id.action_homeFragment_to_settingsFragment)
+                true
+            }
+            R.id.launch_export_menu -> {
+
+                false
+            }
+            R.id.launch_help_menu -> {
+                findNavController().navigate(R.id.action_homeFragment_to_helpFragment)
+                true
+            }
+            R.id.launch_input_menu -> {false}
+            R.id.search_menu_home -> {true}
+            else -> false
         }
-        return super.onOptionsItemSelected(item)
     }
 
 

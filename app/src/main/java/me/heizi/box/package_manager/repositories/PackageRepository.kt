@@ -118,7 +118,7 @@ class PackageRepository(
         fun line(block:()->String) { sb.appendLine(block()) }
 
         //准备工作
-        val isBackup  = mapper.isBackup == true
+        val isBackup  = mapper.isBackup ?: true
         val backupPath = mapper.backupPath ?: backupPaths?.absolutePath
         val sDir = applicationInfo.sourceDir
         val dDir = getDataPath(applicationInfo,isBackup)
@@ -129,21 +129,22 @@ class PackageRepository(
         //如果需要备份判断是否为备份
         when {
             isBackup && !backupPath.isNullOrEmpty() -> { // 移动备份
-                val short = when {
-                    sDir.matches(withApk) -> sDir.split("/").takeLast(2).joinToString("/")
-                    sDir.matches(hasNoApk) -> sDir.split("/").last()
+                when {
+                    sDir.matches(withApk) -> {
+                        val l = sDir.split("/")
+                        val short = l.takeLast(2).joinToString("/")
+                        val dir = l[l.lastIndex-1]
+                        line { "mkdir $backupPath/$dir" }
+                        line { "mv -f $sDir $backupPath/$short" }
+                    }
                     else -> error()
                 }
-                line { "mv -f $sDir $backupPath/$short" }
             } isBackup -> { //重命名备份
                 if (!sDir.matches(withApk)) error()
                 line { "mv $sDir $sDir.bak" }
             } else ->  { //无需备份
                 line { "rm -rf $sDir" }
             }
-        }
-        dDir?.let {
-            line { "rm -f $it" }
         }
         val result = scope.su(sb.toString())
 
@@ -159,6 +160,10 @@ class PackageRepository(
             when (val r = result.await()) {
                 is CommandResult.Success -> {
                     updateDB { record.add() }
+                    //清除数据
+                    dDir?.let {
+                         su("rm -f $it")
+                    }
                     UninstallStatues.Success(position)
                 }
                 is CommandResult.Failed -> UninstallStatues.Failed(r)

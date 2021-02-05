@@ -216,7 +216,7 @@ ${failed.processingMessage.takeIf { it.isNotEmpty() } ?:"无"}
                 viewModelScope.su(
                     mount,
                     "chmod 777 $path",
-                    "rm -f $path"
+                    "rm -rf $path"
                 ).await().let(block).let(::updateStatus)
             }
         }

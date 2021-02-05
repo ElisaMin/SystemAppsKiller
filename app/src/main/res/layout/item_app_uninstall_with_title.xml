@@ -78,29 +78,18 @@
             app:layout_constraintTop_toBottomOf="@+id/app_name_item_home"
             tools:text="/system/product/priv-app/thefuckinglongname/yeahitslongstill.apk" />
 
-        <FrameLayout
+        <me.heizi.box.package_manager.custom_view.IconButton
             android:id="@+id/uninstall_btn"
+            android:icon="@drawable/ic_outline_delete_forever_24"
             android:layout_width="48dp"
             android:layout_height="48dp"
+            app:tint="?android:textColorPrimary"
             android:layout_marginTop="6dp"
             android:layout_marginEnd="16dp"
-            android:background="@drawable/circle"
-            android:clickable="true"
-            android:contextClickable="true"
-            android:focusable="true"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tv_item_title_only"
-            tools:ignore="SpeakableTextPresentCheck">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_gravity="center_horizontal|center_vertical"
-                app:srcCompat="@drawable/ic_outline_delete_forever_24"
-                app:tint="?android:textColorPrimary"
-                tools:ignore="ContentDescription" />
-        </FrameLayout>
+            tools:ignore="SpeakableTextPresentCheck"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

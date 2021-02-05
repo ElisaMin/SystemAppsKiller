@@ -13,7 +13,6 @@
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS_FULL"
         tools:ignore="ProtectedPermissions" />
-
     <queries/>
     <application
         android:name=".Application"

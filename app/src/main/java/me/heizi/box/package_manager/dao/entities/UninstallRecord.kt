@@ -8,7 +8,7 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "recording")
 data class UninstallRecord(
     @PrimaryKey @ColumnInfo(index = true)
-    val id: Int = 0,
+    val id: Int? = null,
     val name:String,
     val packageName:String,
     val source:String,

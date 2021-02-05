@@ -23,7 +23,7 @@ import androidx.room.PrimaryKey
 )
 data class Connect(
     @PrimaryKey
-    val id: Int = 0,
+    val id: Int? = null,
     @ColumnInfo(name = "version_id",index = true)
     val version:Int=0,
     @ColumnInfo(name = "record_id",index = true)
