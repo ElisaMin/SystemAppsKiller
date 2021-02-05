@@ -11,6 +11,7 @@
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:background="?colorOnPrimary"
+        android:id="@+id/layout_home"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -31,7 +32,15 @@
                 android:background="#00ffffff"
                 android:backgroundTintMode="add"
                 android:minHeight="?attr/actionBarSize" />
+
+            <ProgressBar
+                android:visibility="@{vm.processing}"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:indeterminate="true" />
         </com.google.android.material.appbar.AppBarLayout>
+
 
 
 

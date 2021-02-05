@@ -34,30 +34,32 @@ class PackageRepository(
     val systemAppsFlow get() = _systemAppsFlow.asStateFlow()
 
 
+
+
     init {
+        // FIXME: 2021/2/5 测试在这里一下
+        scope.launch(Default) {
+            _systemAppsFlow.value.forEach {
+                _labels[it.packageName] =  pm.getApplicationLabel(it).toString()
+            }
+        }
         scope.launch(IO) {
             val time = _systemAppsFlow.value.sort().await()
             val all = _systemAppsFlow.value.size
             val score = (((time*2).toFloat()/all)*100).roundToInt()
             launch(Main) {
-                context.longToast("排序完成，本次排序花费${time}ms。累赘指数$score。")
+                context.longToast("加载完成，本次加载花费${time}ms。累赘指数$score。")
             }
+            launch(Default) {
+                _systemAppsFlow.value.forEach {
+
+                }
+            }
+
 
         }
         Log.i(TAG, "init: sorting")
     }
-
-    /**
-     * 对比显示中数据和ApplicationInfo是否一致
-     *
-     * @param data
-     * @param info
-     * @return 是否一致
-     */
-//    private fun diff(data: DisplayingData.App,info:ApplicationInfo):Boolean =
-//        (data.name == pm.getApplicationLabel(info).toString() && data.sDir == info.sourceDir)
-//
-//
 
 
     /**
@@ -78,9 +80,10 @@ class PackageRepository(
         val time=System.currentTimeMillis()
         //用hashmap区分前面的路径
         val group = HashMap<String,ArrayList<ApplicationInfo>>()
-        //循环分组
+        //循环分组 并进行索引
         forEach {
             val k = getPreviousPath(it.sourceDir)
+            _prevPathIndexed[it.packageName] = k
             group[k]?.add(it) ?: kotlin.run{ group[k] = arrayListOf(it) }
         }//耗时操作
         val waiting = Array(group.size){false}
@@ -110,12 +113,26 @@ class PackageRepository(
         val dealTime = System.currentTimeMillis() - time
         Log.i(TAG, "sort: $dealTime")
         _systemAppsFlow.emit(result)
+        System.gc()
         dealTime
     }
     companion object {
         val withApk by lazy { """(/[^/]+)+(/[^/]+\.apk)""".toRegex() }
         val hasNoApk by lazy { """[/\w+]+""".toRegex() }
         private val paths by lazy { """/([^/]+)+""".toRegex() }
+
+
+        /**
+         * Key:PackageName Value:PrevPath
+         */
+        private val _prevPathIndexed = HashMap<String,String>()
+        val prevPathIndexed:Map<String,String> get() = _prevPathIndexed
+
+        /**
+         * Key:PackageName Value:Labels
+         */
+        private val _labels = HashMap<String,String>()
+        val labels:Map<String,String> get() = _labels
 
 
         /**

@@ -8,14 +8,19 @@ import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.Application.Companion.app
+import me.heizi.box.package_manager.dao.DB.Companion.updateDB
 import me.heizi.box.package_manager.dao.entities.UninstallRecord
 import me.heizi.box.package_manager.models.PreferencesMapper
 import me.heizi.box.package_manager.repositories.PackageRepository
 import me.heizi.box.package_manager.utils.isUserApp
+import me.heizi.box.package_manager.utils.longToast
+import me.heizi.box.package_manager.utils.set
 import me.heizi.box.package_manager.utils.uninstallByShell
 import me.heizi.kotlinx.shell.CommandResult
 
@@ -24,11 +29,21 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
 
     private lateinit var mapper:PreferencesMapper
-
     private lateinit var repository: PackageRepository
+    private val _processing = MutableStateFlow(true)
+    private val _uninstallStatues = MutableSharedFlow<UninstallStatues>()
+    private val adapterDataObserver = object : RecyclerView.AdapterDataObserver() {
+        override fun onChanged() {
+            super.onChanged()
+            Log.i(TAG, "onChanged: list")
+            _processing set false
+        }
+    }
 
+    val processing get() = _processing.asStateFlow()
+    val uninstallStatues get() = _uninstallStatues.asSharedFlow()
     val adapter by lazy {
-        NewAdapter(
+        Adapter(
             application.packageManager,
             viewModelScope,
             repository.systemAppsFlow,
@@ -37,12 +52,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             this.registerAdapterDataObserver(adapterDataObserver)
         }
     }
-    private val adapterDataObserver = object : RecyclerView.AdapterDataObserver() {
-        override fun onChanged() {
-            super.onChanged()
-            Log.i(TAG, "onChanged: list")
-        }
-    }
+
+
 
     /**
      * 次构造函数
@@ -56,17 +67,19 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         starts()
     }
 
-
-
-
     /**
      * Starts
      *
      * 开始收集
      */
     private fun starts() = viewModelScope.launch(Dispatchers.Unconfined) {
+        _processing.emit(false)
         repository.systemAppsFlow.collectLatest {
-            adapter.notifyDataSetChanged()
+            _processing.emit(true)
+            launch(Main) {
+                adapter.notifyDataSetChanged()
+                _processing.emit(false)
+            }
         }
     }
 
@@ -83,16 +96,20 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         else null
     }
 
-
-
     /**
      * 被界面通知到了调用的卸载
      *
      * @param position
      */
-    // FIXME: 2021/2/3 remove item不行
+    // TODO: 2021/2/5 模拟
     private fun uninstall(position: Int) {
-
+        _processing set true
+        viewModelScope.launch(IO){
+            delay(1000)
+            adapter.removeAt(position)
+//            _uninstallStatues.emit(UninstallStatues.Failed(CommandResult.Failed("123","456",13)))
+            _processing set false
+        }
     }
 
     /**
@@ -131,37 +148,29 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             )
             //卸载完成
             when(val r = result.await()) {
-                is CommandResult.Success -> onUninstallSuccess(r,record)
-                is CommandResult.Failed -> onUninstallFailed(r)
+                is CommandResult.Success -> {
+                    updateDB {
+                        record.add()
+                    }
+                    UninstallStatues.Success
+                }
+                is CommandResult.Failed -> {
+                    UninstallStatues.Failed(r)
+                }
+            }.let {
+                _uninstallStatues.emit(it)
             }
         }else {
-            // TODO: 2021/2/3 卸载普通应用
+            app.applicationContext.longToast("下次再添加卸载普通应用的功能哈哈")
         }
     }
 
     /**
-     * 当卸载成功时:
-     *
-     * @param result
-     * @param record
+     * 一个常见的状态SealedClass
      */
-    private fun onUninstallSuccess(result: CommandResult.Success,record: UninstallRecord) {
-
+    sealed class UninstallStatues {
+        object Success : UninstallStatues()
+        class Failed(val result: CommandResult.Failed) : UninstallStatues()
     }
-
-    /**
-     * 当卸载失败时:
-     *
-     * 通知界面,展示[result]的错误.
-     */
-    private fun onUninstallFailed(result:CommandResult.Failed){
-
-    }
-
-
-
-
-
-
 
 }

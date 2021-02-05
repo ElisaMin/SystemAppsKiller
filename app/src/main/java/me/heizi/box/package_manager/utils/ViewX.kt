@@ -7,6 +7,11 @@ import android.view.View
 import android.widget.Toast
 import androidx.annotation.MainThread
 import androidx.appcompat.app.AlertDialog
+import androidx.viewbinding.ViewBinding
+import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 sealed class DialogBtns(val text:String,val icon:Drawable?=null,val onClick:DialogInterface.OnClickListener) {
     class Positive(text: String, icon: Drawable?=null, onClick: DialogInterface.OnClickListener) :DialogBtns(text, icon, onClick)
@@ -31,11 +36,11 @@ fun Context.dialog(
         setView(view)
         setMessage(message)
         setCancelable(cancelable)
-        btns.takeIf { it.isNotEmpty() }?.let {
+        btns.takeIf { it.isNotEmpty() }?.let { btns ->
             var i = false
             var j = false
             var k = false
-            for (dialogBtn in it) {
+            for (dialogBtn in btns) {
                 if (i||j||k) throw IllegalArgumentException("only one type button on same dialog")
                 when(dialogBtn) {
                     is DialogBtns.Positive -> {
@@ -63,3 +68,14 @@ fun Context.dialog(
 fun Context.longToast(message: String)
     = Toast.makeText(this,message,Toast.LENGTH_LONG).show()
 
+fun ViewBinding.longSnackBar(message: String) {
+    GlobalScope.launch(Main) {
+        Snackbar.make(root,message, Snackbar.LENGTH_LONG).show()
+    }
+}
+
+fun ViewBinding.clickSnackBar(message: String, actionName:String="晓得了", onClick:(View)->Unit) {
+     GlobalScope.launch(Main) {
+        Snackbar.make(root,message, Snackbar.LENGTH_INDEFINITE).setAction(actionName,onClick).show()
+    }
+}

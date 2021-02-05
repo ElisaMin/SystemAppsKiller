@@ -8,6 +8,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import me.heizi.box.package_manager.dao.entities.Connect
 import me.heizi.box.package_manager.dao.entities.UninstallRecord
 import me.heizi.box.package_manager.dao.entities.Version
@@ -32,6 +33,10 @@ abstract class DB: RoomDatabase() {
             dispatcher: CoroutineDispatcher = IO
             ,block:DB.()->T
         ) = async(dispatcher) { block(INSTANCE) }
+        fun CoroutineScope.updateDB(
+                dispatcher: CoroutineDispatcher = IO,
+                block:DB.()->Unit
+        ) = launch(dispatcher) { block(INSTANCE) }
     }
     abstract fun getMapper():DBMapper
 
