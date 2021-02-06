@@ -11,12 +11,14 @@ import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.flow.*
-import me.heizi.box.package_manager.Application
+import me.heizi.box.package_manager.Application.Companion.DEFAULT_MOUNT_STRING
 import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.dao.DB.Companion.updateDB
 import me.heizi.box.package_manager.dao.entities.UninstallRecord
 import me.heizi.box.package_manager.models.PreferencesMapper
 import me.heizi.box.package_manager.ui.home.AdapterService
+import me.heizi.box.package_manager.utils.PathFormatter.getPreviousPath
+import me.heizi.box.package_manager.utils.PathFormatter.withApk
 import me.heizi.box.package_manager.utils.longToast
 import me.heizi.kotlinx.shell.CommandResult
 import me.heizi.kotlinx.shell.su
@@ -86,9 +88,25 @@ class PackageRepository(
             = pm.getApplicationIcon(applicationInfo)
         override fun getPrevPath(applicationInfo: ApplicationInfo): String
             = prevPathIndexed.getOrDefault(applicationInfo.packageName,"分组错误")
-
         override fun uninstall(applicationInfo: ApplicationInfo, position: Int) {
-            uninstallSystemApp(position = position,applicationInfo = applicationInfo)
+            val isBackup = mapper.isBackup ?: true
+            val task = scope.uninstall(
+                isBackup  = isBackup,
+                backupPath = mapper.backupPath ?: backupPaths?.absolutePath,
+                sDir = applicationInfo.sourceDir,
+                dDir = getDataPath(applicationInfo,isBackup),
+                name = getApplicationLabel(applicationInfo),
+                packageName = applicationInfo.packageName,
+                mountString = mapper.mountString ?: DEFAULT_MOUNT_STRING
+            )
+            scope.launch(IO) {
+                when (val r = task.await()) {
+                    is CommandResult.Success -> UninstallStatues.Success(position)
+                    is CommandResult.Failed -> UninstallStatues.Failed(r)
+                }.let {
+                    _uninstallStatues.emit(it)
+                }
+            }
         }
     }
 
@@ -101,77 +119,6 @@ class PackageRepository(
         } else null
     }
 
-    /**
-     * Uninstall system app
-     *
-     * 有三种模式可以卸载
-     * 暴力删除:remove
-     * 移动备份:move path
-     * 改名备份:mv .apk .apk.bak
-     */
-    fun uninstallSystemApp(
-        applicationInfo: ApplicationInfo,
-        position: Int
-    ) = scope.launch(Default) {
-        val sb = StringBuilder()
-        fun error(): Nothing = throw IllegalArgumentException("not normally path")
-        fun line(block:()->String) { sb.appendLine(block()) }
-
-        //准备工作
-        val isBackup  = mapper.isBackup ?: true
-        val backupPath = mapper.backupPath ?: backupPaths?.absolutePath
-        val sDir = applicationInfo.sourceDir
-        val dDir = getDataPath(applicationInfo,isBackup)
-        //挂载
-        line { mapper.mountString ?: Application.DEFAULT_MOUNT_STRING }
-        //添加权限
-        line { "chmod 777 $sDir" }
-        //如果需要备份判断是否为备份
-        when {
-            isBackup && !backupPath.isNullOrEmpty() -> { // 移动备份
-                when {
-                    sDir.matches(withApk) -> {
-                        val l = sDir.split("/")
-                        val short = l.takeLast(2).joinToString("/")
-                        val dir = l[l.lastIndex-1]
-                        line { "mkdir $backupPath/$dir" }
-                        line { "mv -f $sDir $backupPath/$short" }
-                    }
-                    else -> error()
-                }
-            } isBackup -> { //重命名备份
-                if (!sDir.matches(withApk)) error()
-                line { "mv $sDir $sDir.bak" }
-            } else ->  { //无需备份
-                line { "rm -rf $sDir" }
-            }
-        }
-        val result = scope.su(sb.toString())
-
-        val record = UninstallRecord (
-            name = getApplicationLabel(applicationInfo),
-            packageName = applicationInfo.packageName,
-            source =  sDir,
-            data = dDir,
-            isBackups = isBackup
-        )
-
-        scope.launch(IO) {
-            when (val r = result.await()) {
-                is CommandResult.Success -> {
-                    updateDB { record.add() }
-                    //清除数据
-                    dDir?.let {
-                         su("rm -f $it")
-                    }
-                    UninstallStatues.Success(position)
-                }
-                is CommandResult.Failed -> UninstallStatues.Failed(r)
-            }.let {
-                _uninstallStatues.emit(it)
-            }
-        }
-    }
     /**
      * 一个常见的状态SealedClass
      */
@@ -240,73 +187,77 @@ class PackageRepository(
 
 
 
-        val withApk by lazy { """(/[^/]+)+(/[^/]+\.apk)""".toRegex() }
-        val hasNoApk by lazy { """[/\w+]+""".toRegex() }
-        private val paths by lazy { """/([^/]+)+""".toRegex() }
-
-
         val ApplicationInfo.isUserApp
             get() = (flags and ApplicationInfo.FLAG_SYSTEM <= 0)
 
 
         /**
-         * Diff previous path
+         * Uninstall
          *
-         * 对比[getPreviousPath] 的结果是否相等 不相等时返回true
+         * 卸载成为静态方法拿出来了
+         * @param isBackup 是否需要备份
+         * @param backupPath 当空的时候会采用 apk -> apk.bak的形式 否则当开启时会移动到某个文件夹
+         * @param packageName 记录
+         * @param name 记录
+         * @param sDir apk地址
+         * @param dDir data地址 当成功时会被删除
+         * @param mountString 挂载指令
          */
-        suspend fun String.diffPreviousPathAreNotSame(prev: String):Boolean = withContext(Main){
-            val s = this@diffPreviousPathAreNotSame
-            var notSame = (s!=prev)
-            if (notSame) {
-                Log.i(Application.TAG, "diffPreviousPathAreNotSame: $s $prev not same yet")
-
-                val l1 = paths.findAll(s).map {
-                    it.value.replace("/","").takeIf { it.isNotEmpty() }
-                }.filter { it!=null }.toList()
-
-                val l2 = paths.findAll(prev).map {
-                    it.value.replace("/","").takeIf { it.isNotEmpty() }
-                }.filter { it!=null }.toList()
-                val c1 = l1.size
-                val c2 = l2.size
-                notSame = (c1 != c2)
-                if (!notSame)
-                    repeat((if (c1 < c2) c1 else c2)-1) { i->
-                        if (l1[i] != l2[i]) notSame = true}
-            }
-            notSame
-        }
-
-        /**
-         * Get previous path
-         *
-         * 把/system/app/any/path.apk的 /system/app/ 剪下来
-         */
-        fun getPreviousPath(path:String):String {
-            fun notNormalPath(): Nothing = throw IllegalArgumentException("$path 非正常path")
-            //如果是空或者没有/就直接爆炸
-            val list = if (path.isEmpty() || !path.contains("/")) {
-                notNormalPath()
-            } else path.split("/",ignoreCase = true).toMutableList()
-            //带apk的目录删掉.(/./.\.apk)不带的删掉.(/.) (正则
+        fun CoroutineScope.uninstall(
+            isBackup: Boolean,
+            backupPath:String?,
+            packageName:String,
+            name:String,
+            sDir:String,
+            dDir:String?,
+            mountString: String
+        ) = async (IO) {
+            //准备工作
+            val sb = StringBuilder()
+            fun error(): Nothing = throw IllegalArgumentException("not normally path")
+            fun line(block:()->String) { sb.appendLine(block()) }
+            //挂载
+            line { mountString }
+            //添加权限
+            line { "chmod 777 $sDir" }
+            //如果需要备份判断是否为备份
             when {
-                path.matches(withApk) -> {
-                    list.removeLast()
-                    list.removeLast()
+                isBackup && !backupPath.isNullOrEmpty() -> { // 移动备份
+                    when {
+                        sDir.matches(withApk) -> {
+                            val l = sDir.split("/")
+                            val short = l.takeLast(2).joinToString("/")
+                            val dir = l[l.lastIndex-1]
+                            line { "mkdir $backupPath/$dir" }
+                            line { "mv -f $sDir $backupPath/$short" }
+                        }
+                        else -> error()
+                    }
+                } isBackup -> { //重命名备份
+                    if (!sDir.matches(withApk)) error()
+                    line { "mv $sDir $sDir.bak" }
+                } else ->  { //无需备份
+                    line { "rm -rf $sDir" }
                 }
-                path.matches(hasNoApk) -> {
-                    list.removeLast()
-                }
-                else -> notNormalPath()
-            }//转换成为String 后面有/所以drop掉
-            return StringBuilder().apply {
-                list.forEach {
-                    append(it)
-                    append("/")
-                }
-            }.toString().dropLast(1)
+            }
+            val result = su(sb.toString())
+
+            val record = UninstallRecord (
+                name = name,
+                packageName = packageName,
+                source =  sDir,
+                data = dDir,
+                isBackups = isBackup
+            )
+            val r = result.await()
+            if (r is CommandResult.Success) {
+                updateDB { record.add() }
+                dDir?.let { su("rm -f $it") }
+            }
+            r
         }
+
+
+
     }
-
-
 }

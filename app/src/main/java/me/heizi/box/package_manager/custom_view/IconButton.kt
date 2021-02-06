@@ -15,7 +15,9 @@ import me.heizi.box.package_manager.R
 
 
 /**
- * 下次一定
+ * Icon button
+ *
+ * 假装自己是个btn
  */
 class IconButton @JvmOverloads constructor(
     context: Context,
@@ -23,10 +25,6 @@ class IconButton @JvmOverloads constructor(
     @AttrRes defStyleAttr:Int = 0,
     @StyleRes defStyleRes:Int = 0
 ) : FrameLayout(context,attrs,defStyleAttr,defStyleRes) {
-
-
-
-
 
     var icon = ImageView(context)
 

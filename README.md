@@ -15,7 +15,19 @@ GPLv3.0
 ##### 备份时
 备份时则由用户选择是否备份在/sdcard/android/data...还是在/sdcard/的任意地方。
 ### 导出入
-导出时从数据内获取数据并转换成为json数据并压缩，导入反道而行。数据存储时使用SQLITE数据库，数据内存放@TODO，JSON格式为@TODO，压缩所需要的算法为@TODO。
+导出时从数据内获取数据并转换成为json数据并压缩，导入反道而行。
+##### 关于字符压缩
+我对比了对于 [卸载列表](https://github.com/ElisaMin/SystemAppsKiller/blob/7adfc99f86c305cba054553d74679ec24480fe05/app/src/main/java/me/heizi/box/packagemanager/libs/lib.kt) 的压缩后进行base64编码的长度，我打算使用GZIP。
+
+|压缩方式|长度 |
+|---:|:----|
+|lz4     |1256|
+|gzip    |812|
+|deflate |800|
+|snappy  |1048|
+|bzip2   |896|
+|zstd    |924|
+
 ### 判断是否可挂载
 ```
 先挂载
@@ -24,7 +36,7 @@ GPLv3.0
 ```
 执行成功就判断成功了
 ### 搜索
-待解决：中文名字的应用搜索不出来cnmb
+待解决：更好用的
 ## 风格化
 ## 用户使用流程
 ### 第一次打开时

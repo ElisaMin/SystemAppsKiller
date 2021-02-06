@@ -13,9 +13,9 @@ import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
 import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.databinding.ItemAppUninstallWithTitleBinding
-import me.heizi.box.package_manager.repositories.PackageRepository.Companion.diffPreviousPathAreNotSame
 import me.heizi.box.package_manager.repositories.PackageRepository.Companion.isUserApp
 import me.heizi.box.package_manager.utils.DialogBtns
+import me.heizi.box.package_manager.utils.PathFormatter.diffPreviousPathAreNotSame
 import me.heizi.box.package_manager.utils.dialog
 import me.heizi.box.package_manager.utils.longToast
 import java.util.*

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:clickable="true"
+    android:background="?selectableItemBackground"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:focusable="true">
+
+    <TextView
+        android:id="@+id/title_uninstall_info"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:lines="2"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+        app:layout_constraintEnd_toStartOf="@+id/iconButton"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="点击在屏幕上方工具栏的按钮进入版本导出 为空时则显示文字空，非空时展示名字和创建时间，还有一段文字解释，长按版本可复制导出这个版本。 点击上方工具栏的加号展示所有从`已经卸载的列表`，并对其进行添加和删除的操作 上方有完成按钮，点击完成后提示完成和长按版本可复制。" />
+
+    <me.heizi.box.package_manager.custom_view.IconButton
+        android:id="@+id/iconButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="4dp"
+        android:icon="@drawable/ic_baseline_clear_24"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="?android:textColorPrimary" />
+
+    <TextView
+        android:id="@+id/message_uninstall_info"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/title_uninstall_info"
+        app:layout_constraintStart_toStartOf="@+id/title_uninstall_info"
+        app:layout_constraintTop_toBottomOf="@+id/title_uninstall_info"
+        tools:text="点击在屏幕上方工具栏的按钮进入版本导出 为空时则显示文字空，非空时展示名字和创建时间，还有一段文字解释，长按版本可复制导出这个版本。 点击上方工具栏的加号展示所有从`已经卸载的列表`，并对其进行添加和删除的操作 上方有完成按钮，点击完成后提示完成和长按版本可复制。" />
+</androidx.constraintlayout.widget.ConstraintLayout>

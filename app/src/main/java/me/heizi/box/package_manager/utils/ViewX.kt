@@ -4,14 +4,18 @@ import android.content.Context
 import android.content.DialogInterface
 import android.graphics.drawable.Drawable
 import android.view.View
+import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.IdRes
 import androidx.annotation.MainThread
 import androidx.appcompat.app.AlertDialog
+import androidx.recyclerview.widget.RecyclerView
 import androidx.viewbinding.ViewBinding
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlin.reflect.KProperty
 
 sealed class DialogBtns(val text:String,val icon:Drawable?=null,val onClick:DialogInterface.OnClickListener) {
     class Positive(text: String, icon: Drawable?=null, onClick: DialogInterface.OnClickListener) :DialogBtns(text, icon, onClick)
@@ -78,4 +82,19 @@ fun ViewBinding.clickSnackBar(message: String, actionName:String="晓得了", on
      GlobalScope.launch(Main) {
         Snackbar.make(root,message, Snackbar.LENGTH_INDEFINITE).setAction(actionName,onClick).show()
     }
+}
+fun RecyclerView.ViewHolder.bindText(@IdRes id: Int) = TextViewTextBinding(itemView,id)
+class TextViewTextBinding (
+    parent: View,
+    @IdRes private val id:Int
+) {
+    private val view:TextView by lazy { parent.findViewById(id) }
+    operator fun getValue(thisRef: Any?, property: KProperty<*>): String? {
+        return view.text?.toString()
+    }
+    operator fun setValue(thisRef: Any?, property: KProperty<*>, value: String?) {
+        view.text = value
+    }
+
+
 }
