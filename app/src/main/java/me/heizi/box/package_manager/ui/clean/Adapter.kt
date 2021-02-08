@@ -3,6 +3,7 @@ package me.heizi.box.package_manager.ui.clean
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -32,7 +33,15 @@ class Adapter:ListAdapter<UninstallInfo,Adapter.ViewHolder>(differ){
             """|$sourceDirectory
                |${dataDirectory?:"没有数据路径可删除"}
                 """.trimMargin()
+            holder.itemView.findViewById<FrameLayout>(R.id.delete_uninstall_info_btn).setOnClickListener {
+                removeItem(position)
+            }
         } }
+    }
+    private fun removeItem(position: Int) {
+        currentList.removeAt(position)
+        notifyItemRemoved(position)
+        notifyItemRangeChanged(position-1,3)
     }
     companion object {
         private val differ = object : DiffUtil.ItemCallback<UninstallInfo>(){

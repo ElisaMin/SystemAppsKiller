@@ -9,7 +9,9 @@ import android.widget.Filter
 import android.widget.Filterable
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.databinding.ItemAppUninstallWithTitleBinding
@@ -33,9 +35,24 @@ class Adapter constructor(
     private val scope: CoroutineScope,
 
     private val service: AdapterService,
-    private val processing:()->Unit
+    private val processing:()->Unit,
+    private val stopProcessing:()->Unit
 ) :RecyclerView.Adapter<Adapter.ViewHolder>(),Filterable {
 
+
+
+    init {
+        scope.launch(Dispatchers.Unconfined) {
+            stopProcessing
+            service.allAppF.collectLatest {
+                processing
+                launch(Main) {
+                    notifyDataSetChanged()
+                    stopProcessing
+                }
+            }
+        }
+    }
 
     /**
      * Current
@@ -61,7 +78,7 @@ class Adapter constructor(
         if(service.removeItemFormAllApps(item))
         if (current.remove(item)) scope.launch(Main) {
             notifyItemRemoved(position)
-            notifyItemRangeChanged(position-1,position+1)
+            notifyItemRangeChanged(position-1,3)
         }
     }
 

@@ -17,14 +17,14 @@
         android:layout_marginEnd="8dp"
         android:lines="2"
         android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-        app:layout_constraintEnd_toStartOf="@+id/iconButton"
+        app:layout_constraintEnd_toStartOf="@+id/delete_uninstall_info_btn"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         tools:text="点击在屏幕上方工具栏的按钮进入版本导出 为空时则显示文字空，非空时展示名字和创建时间，还有一段文字解释，长按版本可复制导出这个版本。 点击上方工具栏的加号展示所有从`已经卸载的列表`，并对其进行添加和删除的操作 上方有完成按钮，点击完成后提示完成和长按版本可复制。" />
 
     <me.heizi.box.package_manager.custom_view.IconButton
-        android:id="@+id/iconButton"
+        android:id="@+id/delete_uninstall_info_btn"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_marginTop="4dp"

@@ -4,10 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.Default
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
+import me.heizi.box.package_manager.models.JsonContent
 import me.heizi.box.package_manager.models.UninstallInfo
 import me.heizi.box.package_manager.utils.Compressor
 import me.heizi.box.package_manager.utils.set
@@ -23,7 +25,12 @@ class CleanViewModel(
     val textInput = msf("")
 
     private val _processing = msf(true)
-    private val _list:msf<MutableList<UninstallInfo>> = msf(arrayListOf())
+
+    /**
+     * Uninstall info
+     * 变动时扔到adapter里面展示给用户
+     */
+    private val _uninstallsInfo:MutableSharedFlow<JsonContent> = MutableSharedFlow()
     private val _helpText:msf<String?> = msf(null)
     fun startProcessing() {
         _processing set  true
@@ -32,6 +39,7 @@ class CleanViewModel(
         _processing set false
     }
     init {
+
         viewModelScope.launch(Dispatchers.Unconfined) {
             textInput.filter {
                 it.length>6
@@ -39,7 +47,8 @@ class CleanViewModel(
                 startProcessing()
                 try {
                     launch(Default) {
-                        _list set (Compressor.buildJson(it).apps.toMutableList())
+                        val jsonContent = Compressor.buildJson(it)
+                        _uninstallsInfo.emit(jsonContent)
                     }
                 }catch (e:Exception) {
                     _helpText set e.message
@@ -49,18 +58,30 @@ class CleanViewModel(
             }
         }
         viewModelScope.launch(Dispatchers.Unconfined) {
-            _list.collectLatest {
-                launch(Dispatchers.Main) { adapter.submitList(it) }
+            _uninstallsInfo.collectLatest {
+                launch(Dispatchers.Main) { adapter.submitList(it.apps.toMutableList()) }
             }
         }
     }
 
 
+    /**
+     * On done btn clicked
+     *
+     * 当点击时弹出窗口让用户选择备份模式
+     * 完成时
+     */
     fun onDoneBtnClicked() {
-        adapter.currentList.takeUnless { it.isNullOrEmpty() }?.let(::onStartingUninstall)
-    }
-    private fun onStartingUninstall(list: MutableList<UninstallInfo>){
 
+    }
+
+    /**
+     * 正式开始处理传进来的卸载列表
+     *
+     * 调入后台在状态栏内提示正在卸载
+     * @param list
+     */
+    private fun onStartingUninstall(list: MutableList<UninstallInfo>){
 
     }
 

@@ -10,6 +10,7 @@ class Application: App() {
         const val TAG = "HeiziTool-Uninstaller"
         const val DEFAULT_MOUNT_STRING = "mount -o rw,remount / \nchmod 777 /"
         const val PREFERENCES = "UNINSTALLER_CONFIG"
+        var defaultBackupPath:String? = null
         val AndroidViewModel.app get() = getApplication<Application>()
     }
 
@@ -18,5 +19,6 @@ class Application: App() {
         super.onCreate()
         //实例化Database
         DB.resign(this)
+        defaultBackupPath = applicationContext.getExternalFilesDir("backup")?.absolutePath
     }
 }
