@@ -8,7 +8,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import me.heizi.box.package_manager.R
 import me.heizi.box.package_manager.databinding.CleanFragmentBinding
-import me.heizi.box.package_manager.utils.dialog
+import me.heizi.box.package_manager.models.BackupType
+import me.heizi.box.package_manager.utils.dialogBuilder
+import me.heizi.box.package_manager.utils.longToast
 
 class CleanFragment : Fragment(R.layout.clean_fragment) {
     private val binding by lazy { CleanFragmentBinding.bind(requireView()) }
@@ -17,21 +19,33 @@ class CleanFragment : Fragment(R.layout.clean_fragment) {
             return modelClass.getConstructor(CleanViewModel.Service::class.java).newInstance(defaultViewModelService)
         }
     } })
+
     private val defaultViewModelService = object : CleanViewModel.Service {
-        override fun onDoneClicked() {
-            requireContext().dialog(
-                    
-            )
+        override fun getBackupType() = callDialogGetBackupType()
+        override fun longToast(string: String) {
+            context?.longToast(string)
         }
     }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.lifecycleOwner = viewLifecycleOwner
         binding.viewModel = viewModel
+        viewModel.stopProcessing()
     }
 
-
-
-
+    private fun callDialogGetBackupType():BackupType {
+        var type:BackupType? = null
+        requireContext().dialogBuilder(
+                title = "请选择备份模式",
+        ).apply {
+            setItems(arrayOf("不备份","把apk改名为apk.bak","把APK移动到内部存储空间")) {_,i ->
+                type = when(i) {
+                    0 -> BackupType.JustRemove
+                    1 -> BackupType.BackupWithOutPath
+                    else -> BackupType.BackupWithPath.Default
+                }
+            }
+        }.show()
+        return  type!!
+    }
 }

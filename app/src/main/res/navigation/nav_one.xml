@@ -15,6 +15,9 @@
         <action
             android:id="@+id/action_homeFragment_to_helpFragment"
             app:destination="@id/helpFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_cleanFragment"
+            app:destination="@id/cleanFragment" />
     </fragment>
     <fragment
         android:id="@+id/preconfigFragment"
@@ -33,4 +36,8 @@
         android:name="me.heizi.box.package_manager.ui.sheet.HelpFragment"
         android:label="fragment_item_list"
         tools:layout="@layout/fragment_item_list" />
+    <fragment
+        android:id="@+id/cleanFragment"
+        android:name="me.heizi.box.package_manager.ui.clean.CleanFragment"
+        android:label="CleanFragment" />
 </navigation>

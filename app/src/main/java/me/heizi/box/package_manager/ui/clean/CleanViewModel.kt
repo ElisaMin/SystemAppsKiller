@@ -1,14 +1,19 @@
 package me.heizi.box.package_manager.ui.clean
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.Default
+import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
+import me.heizi.box.package_manager.Application.Companion.TAG
+import me.heizi.box.package_manager.models.BackupType
 import me.heizi.box.package_manager.models.JsonContent
 import me.heizi.box.package_manager.utils.Compressor
 import me.heizi.box.package_manager.utils.set
@@ -19,12 +24,15 @@ private val service:Service
 ) : ViewModel() {
 
     interface Service {
-        fun onDoneClicked()
+        fun getBackupType():BackupType
+        fun longToast(string: String)
     }
 
     val processing get() = _processing.asStateFlow()
     val adapter by lazy { Adapter() }
     val textInput = msf("")
+
+    val helpText get() = _helpText.asStateFlow()
 
     private val _processing = msf(true)
 
@@ -40,19 +48,23 @@ private val service:Service
     fun stopProcessing() {
         _processing set false
     }
+    var isUsing = false
     init {
-
-        viewModelScope.launch(Dispatchers.Unconfined) {
+        viewModelScope.launch(Dispatchers.Default) {
             textInput.filter {
                 it.length>6
             }.collectLatest {
                 startProcessing()
                 try {
+                    val jsonContent = Compressor.buildJson(it)
                     launch(Default) {
-                        val jsonContent = Compressor.buildJson(it)
                         _uninstallsInfo.emit(jsonContent)
                     }
+                    Log.i(TAG, "workingwill")
+                    isUsing = true
                 }catch (e:Exception) {
+                    Log.i(TAG, "wrongWithDecoding ",e)
+                    isUsing = false
                     _helpText set e.message
                 } finally {
                     stopProcessing()
@@ -64,6 +76,7 @@ private val service:Service
                 launch(Dispatchers.Main) { adapter.submitList(it.apps.toMutableList()) }
             }
         }
+
     }
 
 
@@ -74,6 +87,12 @@ private val service:Service
      * 完成时
      */
     fun onDoneBtnClicked() {
-        service.onDoneClicked()
+        Log.i(TAG, "onDoneBtnClicked: $isUsing")
+        if (isUsing) {
+            val task = viewModelScope.async(Main){ service.getBackupType() }
+            val list = adapter.currentList
+        } else {
+            service.longToast("似乎列表还没有就绪")
+        }
     }
 }

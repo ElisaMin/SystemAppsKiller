@@ -1,12 +1,12 @@
 package me.heizi.box.package_manager.ui.home
 
-import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
+import androidx.activity.addCallback
 import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -14,7 +14,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import kotlinx.coroutines.Dispatchers.Default
+import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.Dispatchers.Unconfined
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import me.heizi.box.package_manager.Application.Companion.TAG
@@ -25,6 +28,8 @@ import me.heizi.box.package_manager.repositories.PackageRepository
 import me.heizi.box.package_manager.utils.clickSnackBar
 import me.heizi.box.package_manager.utils.dialog
 import me.heizi.box.package_manager.utils.longSnackBar
+import me.heizi.box.package_manager.utils.shortToast
+import kotlin.random.Random
 
 class HomeFragment : Fragment(R.layout.home_fragment) {
     private val viewModel:HomeViewModel by viewModels {
@@ -36,11 +41,43 @@ class HomeFragment : Fragment(R.layout.home_fragment) {
     }
     private val binding by lazy { HomeFragmentBinding.bind(requireView()) }
 
-    @SuppressLint("RestrictedApi")
+    /**
+     * 有三种状态
+     * 空状态，点击一次，点击第二次
+     */
+    private var isExit:Boolean? = null
+
+    /**
+     * On back btn
+     *
+     * 当第一次调用时则将空状态设置成第一次点击
+     * 第一点击是会触发机制在600毫秒内调用可以进入第二次点击状态
+     * 第二次点击状态时就会爆炸 但超过600毫秒没有被调用的话就会进入空状态
+     */
+    private fun onBackBtn() {
+        if (isExit ==false) isExit = true
+        else lifecycleScope.launch(Main) {
+            val time = Random(System.currentTimeMillis()).nextInt(20,40)
+            context?.shortToast("${time*30}毫秒内再次点击即可退出应用")
+            launch(Default) {
+                isExit = false
+                repeat(time) {
+                    if (isExit == true) {
+                        parent.finish()
+                    }
+                    delay(30)
+                }
+                isExit = null
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
-//        findNavController().backStack.clear()
+        requireActivity().onBackPressedDispatcher.addCallback(this) {
+            onBackBtn()
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

@@ -8,6 +8,7 @@ import android.app.Service
 import android.content.Intent
 import android.graphics.drawable.Icon
 import android.os.IBinder
+import android.util.Log
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import me.heizi.box.package_manager.Application.Companion.PACKAGE_NAME
+import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.R
 import me.heizi.box.package_manager.models.BackupType
 import me.heizi.box.package_manager.models.JsonContent
@@ -36,7 +38,7 @@ class CleaningAndroidService : Service() {
             }
         }
     }
-    private val notificationManager = applicationContext.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+    private val notificationManager get() =  baseContext.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
     private val uninstallResults by lazy { MutableSharedFlow<Pair<UninstallInfo,CommandResult>>() }
 
     companion object {
@@ -48,15 +50,15 @@ class CleaningAndroidService : Service() {
 
     }
 
-    private val icon by lazy { Icon.createWithResource(applicationContext,R.drawable.ic_outline_notification_72) }
+    private val icon by lazy { Icon.createWithResource(baseContext,R.drawable.ic_outline_notification_72) }
 
     private val processNotification get() = Notification
-            .Builder(applicationContext, PROCESS_NOTIFY_CHANNEL_ID)
+            .Builder(baseContext, PROCESS_NOTIFY_CHANNEL_ID)
             .setLargeIcon(icon)
             .setSmallIcon(icon)
             .setContentTitle("正在卸载")
     private val failedNotification get() = Notification
-            .Builder(applicationContext, FAILED_NOTIFY_CHANNEL_ID)
+            .Builder(baseContext, FAILED_NOTIFY_CHANNEL_ID)
             .setLargeIcon(icon)
             .setBadgeIconType(Notification.BADGE_ICON_SMALL)
             .setSmallIcon(icon)
@@ -74,10 +76,10 @@ class CleaningAndroidService : Service() {
      * @param appName 应用名称
      */
     private suspend fun buildFailedNotification(reason:String?,appName:String) = coroutineScope {
-        if (failedTimes>=6) launch(Main){
             val style = reason?.let {
                 Notification.BigTextStyle().setSummaryText(appName).bigText(reason).setBigContentTitle("卸载失败,原因:")
             }?:Notification.BigTextStyle().setSummaryText(appName).bigText("卸载失败但无错误原因")
+
             failedNotification
                     .setContentText(reason)
                     .setStyle(style)
@@ -85,15 +87,6 @@ class CleaningAndroidService : Service() {
                     .let {
                         notificationManager.notify(FAILED_TAG, failedTimes++,it)
                     }
-        } else launch(Main){
-            failedNotification
-                    .setContentTitle("卸载失败...")
-                    .setNumber(failedTimes++)
-                    .build()
-                    .let {
-                        notificationManager.notify(FAILED_TAG,8,it)
-                    }
-        }
 
     }
 
@@ -105,7 +98,7 @@ class CleaningAndroidService : Service() {
     private suspend fun showProgress(s:String) = coroutineScope {
         launch(Main) {
             processNotification.setContentTitle("卸载成功....").setContentText(s).build().let {
-                notificationManager.notify(PROCESS_NOTIFY_TAG, PROCESS_NOTIFY_ID,it)
+                notificationManager.notify( PROCESS_NOTIFY_ID,it)
             }
         }
 
@@ -141,6 +134,7 @@ class CleaningAndroidService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        Log.i(TAG, "onDestroy: bye~")
         scope.cancel()
         _scope = null
     }

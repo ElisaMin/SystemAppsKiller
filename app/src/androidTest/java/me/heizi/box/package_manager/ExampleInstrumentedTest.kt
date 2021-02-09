@@ -1,13 +1,20 @@
 package me.heizi.box.package_manager
 
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.os.IBinder
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import me.heizi.box.package_manager.repositories.CleaningAndroidService
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.*
 
 /**
  * Instrumented test, which will execute on an Android device.
@@ -18,6 +25,53 @@ private const val TAG = "ExampleInstrumentedTest"
 @RunWith(AndroidJUnit4::class)
 class ExampleInstrumentedTest {
     private val appContext by lazy { InstrumentationRegistry.getInstrumentation().targetContext }
+
+//    fun emit(ondone:()->Unit) {
+//        MainScope().launch(Dispatchers.Main) {
+//            repeat(100) {
+//                Random(it).nextInt(10).let { r->
+//                    Log.i(Application.TAG, "emit: $r")
+//                    (if (r>5) CommandResult.Success("")
+//                    else CommandResult.Failed("use less","its a error message",3))
+//                            .let {s->
+//                                collectResults(UninstallInfo("anyway$it","ane","gadg","dgdfd",) to s)
+//                            }
+//                    delay(300)
+//                }
+//            }
+//            stopSelf()
+////                ondone()
+//        }
+//    }
+    @Test
+    fun service() {
+        var running = true
+        var binder:CleaningAndroidService.Binder? = null
+        val intent = Intent(appContext,CleaningAndroidService::class.java)
+        intent.action = Intent.ACTION_USER_FOREGROUND
+        val connect = object : ServiceConnection {
+            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                binder = (service as CleaningAndroidService.Binder)
+                Log.i(TAG, "onServiceConnected: called")
+//                binder!!.emit {
+//                    Log.i(TAG, "onServiceConnected: stoping")
+//                    appContext.stopService(intent)
+//                    running = false
+//                }
+            }
+
+            override fun onServiceDisconnected(name: ComponentName?) {
+
+            }
+        }
+                intent
+                .also(appContext::startService)
+                .also { appContext.bindService(it,connect, Context.BIND_AUTO_CREATE) }
+        while (running) {
+
+        }
+    }
+
     @Test
     fun useAppContext() {
         // Context of the app under test.
@@ -37,7 +91,7 @@ class ExampleInstrumentedTest {
     }
     val withApk = """[/\w+]+/.+\.apk""".toRegex()
     val hasNoApk = """[/\w+]+""".toRegex()
-    val appList:HashMap<String,ArrayList<PackageInfo>> = hashMapOf()
+    val appList: HashMap<String, ArrayList<PackageInfo>> = hashMapOf()
     fun getPreviousPath(path:String):String {
         fun notNormalPath(): Nothing = throw IllegalArgumentException("$path 非正常path")
         val list = if (path.isEmpty() || !path.contains("/")) {

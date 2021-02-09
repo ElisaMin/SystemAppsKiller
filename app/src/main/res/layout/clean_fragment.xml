@@ -16,6 +16,8 @@
         tools:context=".ui.clean.CleanFragment">
 
         <me.heizi.box.package_manager.custom_view.IconButton
+            android:layout_marginEnd="16dp"
+            android:onClick="@{()->viewModel.onDoneBtnClicked()}"
             android:icon="@drawable/ic_outline_done_24"
             app:tint="?android:textColorPrimary"
             android:layout_gravity="end"
@@ -43,13 +45,14 @@
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_margin="16dp"
                     android:hint="可卸载文本"
+                    app:helperText="@{viewModel.helpText}"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:lines="1"
-                        android:text="@{viewModel.textInput}"
+                        android:text="@={viewModel.textInput}"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content" />
                 </com.google.android.material.textfield.TextInputLayout>
