@@ -7,7 +7,6 @@ import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.IdRes
-import androidx.annotation.MainThread
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewbinding.ViewBinding
@@ -26,16 +25,14 @@ sealed class DialogBtns(val text:String,val icon:Drawable?=null,val onClick:Dial
 /**
  * Dialog makers
  */
-@MainThread
-fun Context.dialog(
+fun Context.dialogBuilder(
     vararg btns: DialogBtns,
     title:String?=null,
     view: View?=null,
     message:String?=null,
     cancelable: Boolean = true,
-    show:Boolean = true,
 ) =
-    AlertDialog.Builder(this).run {
+    AlertDialog.Builder(this).apply {
         setTitle(title)
         setView(view)
         setMessage(message)
@@ -65,8 +62,20 @@ fun Context.dialog(
                 }
             }
         }
-        if (show) show() else create()
     }
+/**
+ * Dialog makers
+ */
+fun Context.dialog(
+    vararg btns: DialogBtns,
+    title:String?=null,
+    view: View?=null,
+    message:String?=null,
+    cancelable: Boolean = true,
+    show:Boolean = true,
+) = dialogBuilder(*btns,title = title, view = view, message = message,cancelable =  cancelable).run {
+    if (show) show() else create()
+}
 
 
 fun Context.longToast(message: String)

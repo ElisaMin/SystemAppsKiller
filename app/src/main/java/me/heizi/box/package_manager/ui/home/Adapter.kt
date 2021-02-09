@@ -43,12 +43,12 @@ class Adapter constructor(
 
     init {
         scope.launch(Dispatchers.Unconfined) {
-            stopProcessing
+            stopProcessing()
             service.allAppF.collectLatest {
-                processing
+                processing()
                 launch(Main) {
                     notifyDataSetChanged()
-                    stopProcessing
+                    stopProcessing()
                 }
             }
         }

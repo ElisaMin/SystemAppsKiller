@@ -11,6 +11,7 @@ class Application: App() {
         const val DEFAULT_MOUNT_STRING = "mount -o rw,remount / \nchmod 777 /"
         const val PREFERENCES = "UNINSTALLER_CONFIG"
         var defaultBackupPath:String? = null
+        const val PACKAGE_NAME="me.heizi.box.uninstaller"
         val AndroidViewModel.app get() = getApplication<Application>()
     }
 

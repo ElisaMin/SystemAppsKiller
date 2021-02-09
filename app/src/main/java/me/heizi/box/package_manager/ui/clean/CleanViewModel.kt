@@ -10,15 +10,17 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import me.heizi.box.package_manager.models.JsonContent
-import me.heizi.box.package_manager.models.UninstallInfo
 import me.heizi.box.package_manager.utils.Compressor
 import me.heizi.box.package_manager.utils.set
 import kotlinx.coroutines.flow.MutableStateFlow as msf
 
 class CleanViewModel(
-//    private val repository: CleanRepository
+private val service:Service
 ) : ViewModel() {
 
+    interface Service {
+        fun onDoneClicked()
+    }
 
     val processing get() = _processing.asStateFlow()
     val adapter by lazy { Adapter() }
@@ -72,17 +74,6 @@ class CleanViewModel(
      * 完成时
      */
     fun onDoneBtnClicked() {
-
+        service.onDoneClicked()
     }
-
-    /**
-     * 正式开始处理传进来的卸载列表
-     *
-     * 调入后台在状态栏内提示正在卸载
-     * @param list
-     */
-    private fun onStartingUninstall(list: MutableList<UninstallInfo>){
-
-    }
-
 }
