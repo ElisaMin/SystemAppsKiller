@@ -11,7 +11,12 @@ import android.os.IBinder
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import me.heizi.box.package_manager.dao.entities.UninstallRecord
+import me.heizi.box.package_manager.models.VersionConnected
 import me.heizi.box.package_manager.repositories.CleaningAndroidService
+import me.heizi.box.package_manager.utils.Compressor
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.*
@@ -43,6 +48,30 @@ class ExampleInstrumentedTest {
 ////                ondone()
 //        }
 //    }
+
+    @Test
+    fun compressor() {
+        val apps = LinkedList<UninstallRecord>()
+        repeat(50) {
+            UninstallRecord(name = "name$it",packageName = "me.heizi.p$it",source = "/path/$it",data = null,id= it)
+                .let(apps::add)
+        }
+        val job = GlobalScope.launch {
+            Compressor.generateV1(VersionConnected(
+                name = "123",
+                apps = apps,
+                createTime = System.currentTimeMillis().toInt(),
+            )).let {
+                Log.i(TAG, "compressor: $it")
+                val json = Compressor.buildJson(it)
+                Log.i(TAG, "compressor: $json")
+            }
+        }
+        while (job.isActive) {
+            Thread.sleep(10)
+        }
+    }
+
     @Test
     fun service() {
         var running = true

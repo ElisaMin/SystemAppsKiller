@@ -120,7 +120,7 @@ object Compressor {
      * 把[VersionConnected]转换成为可分享文本 v1
      *
      * @param version 转换的对象
-     * @return 一个base64编码后的GZIP压缩文件,解压后时完全契合README或者[JsonContent]格式的json.
+     * @return 一个base64编码后的GZIP压缩文件,解压后时完全契合README或者[JsonContent]格式的json. 并且有版本信息
      */
     suspend fun generateV1(version: VersionConnected):String {
         val listBuildingTask = GlobalScope.async(Dispatchers.Default) {
@@ -130,11 +130,13 @@ object Compressor {
             sb.append(":[")
             for (r in version.apps) {
                 val dataPath = r.data?.let { "'$it'" } ?: "null"
-                sb.append("""{$KEY_NAME:'${r.name}',$KEY_PACKAGE:'${r.packageName}',$KEY_SOURCE:'${r.source}',$KEY_DATA:$dataPath},""")
+                sb.append("""{$KEY_NAME:'${r.name}',$KEY_PACKAGE:'${r.packageName}',$KEY_SOURCE:'${r.source}',$KEY_DATA:$dataPath}""")
             }
             //]
-            sb.append("],")
-            sb.toString()
+            sb.append("]")
+            val result = sb.toString().replace("}{","},{")
+            Log.i(TAG, "generateV1: list$result")
+            result
         }
         val sb = StringBuilder()
         with(version) {
@@ -142,9 +144,10 @@ object Compressor {
             sb.append(listBuildingTask.await())
             sb.append("}")
         }
-        val result = sb.toString()
+        //获得不包含版本信息的原始数据
+        val result = sb.toString().compressAndEncodeByBase64()
         Log.d(TAG, "generateV1: result:$result")
-        return result.compressAndEncodeByBase64()
+        return """{v:1,d:'$result'}"""
     }
 
     /**
