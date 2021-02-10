@@ -97,7 +97,7 @@ object Compressor {
             repeat(array.length()) { i ->
                 val app= array.getJSONObject(i)
                 uninstallInfo.add(
-                    UninstallInfo(
+                    UninstallInfo.DefaultUninstallInfo(
                         applicationName = app.getString(KEY_NAME),
                         packageName = app.getString(KEY_PACKAGE),
                         sourceDirectory = app.getString(KEY_SOURCE),

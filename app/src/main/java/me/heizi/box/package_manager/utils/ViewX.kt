@@ -95,6 +95,7 @@ fun ViewBinding.clickSnackBar(message: String, actionName:String="晓得了", on
     }
 }
 fun RecyclerView.ViewHolder.bindText(@IdRes id: Int) = TextViewTextBinding(itemView,id)
+fun RecyclerView.ViewHolder.bindClick(@IdRes id: Int) = ClickBinding(itemView,id)
 class TextViewTextBinding (
     parent: View,
     @IdRes private val id:Int
@@ -106,6 +107,16 @@ class TextViewTextBinding (
     operator fun setValue(thisRef: Any?, property: KProperty<*>, value: String?) {
         view.text = value
     }
-
-
+}
+class ClickBinding (
+    parent: View,
+    @IdRes private val id:Int
+) {
+    private val view:View by lazy { parent.findViewById(id) }
+    operator fun getValue(thisRef: Any?, property: KProperty<*>): (()->Unit)? {
+        return null
+    }
+    operator fun setValue(thisRef: Any?, property: KProperty<*>, block:(()->Unit)?)  {
+        view.setOnClickListener { block?.invoke() }
+    }
 }

@@ -12,7 +12,7 @@
     <uses-permission
         android:name="android.permission.INTERACT_ACROSS_USERS_FULL"
         tools:ignore="ProtectedPermissions" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <queries />
 
@@ -24,6 +24,11 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.PackageManager">
+        <receiver
+            android:name=".broadcast.StopForegroundService"
+            android:enabled="true"
+            android:exported="false"></receiver>
+
         <service
             android:name=".repositories.CleaningAndroidService"
             android:enabled="true"

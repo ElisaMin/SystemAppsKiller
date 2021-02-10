@@ -82,10 +82,6 @@ class HomeFragment : Fragment(R.layout.home_fragment) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        binding.vm = viewModel
-        binding.lifecycleOwner = viewLifecycleOwner
-        parent.setSupportActionBar(binding.toolbar)
         lifecycleScope.launch(Unconfined) {
             parent.viewModel.packageRepository.uninstallStatues.collectLatest { s ->
                 when(s) {
@@ -116,8 +112,12 @@ class HomeFragment : Fragment(R.layout.home_fragment) {
         }
     }
 
+
     override fun onResume() {
         super.onResume()
+        binding.vm = viewModel
+        binding.lifecycleOwner = viewLifecycleOwner
+        parent.setSupportActionBar(binding.toolbar)
         Log.i(TAG, "onResume: home fragment")
     }
 

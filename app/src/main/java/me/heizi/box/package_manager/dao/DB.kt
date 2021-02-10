@@ -31,23 +31,28 @@ abstract class DB: RoomDatabase() {
         }
         fun <T> CoroutineScope.database(
             dispatcher: CoroutineDispatcher = IO
-            ,block:DB.()->T
+            ,block:suspend DB.()->T
         ) = async(dispatcher) { block(INSTANCE) }
+        fun <T> CoroutineScope.databaseMapper(
+            dispatcher: CoroutineDispatcher = IO
+            ,block:suspend DBMapper.()->T
+        ) = async(dispatcher) { block(INSTANCE.getDefaultMapper()) }
+
         fun CoroutineScope.updateDB(
                 dispatcher: CoroutineDispatcher = IO,
-                block:DB.()->Unit
+                block:suspend DB.()->Unit
         ) = launch(dispatcher) { block(INSTANCE) }
     }
-    abstract fun getMapper():DBMapper
+    abstract fun getDefaultMapper():DBMapper
 
 
-    fun Connect.add() = getMapper().add(this)
-    fun Version.add() = getMapper().add(this)
-    fun UninstallRecord.add() = getMapper().add(this)
-    fun Connect.delete() = getMapper().delete(this)
-    fun Version.delete() = getMapper().delete(this)
-    fun UninstallRecord.delete() = getMapper().delete(this)
-    fun Connect.update() = getMapper().update(this)
-    fun Version.update() = getMapper().update(this)
-    fun UninstallRecord.update() = getMapper().update(this)
+    fun Connect.add() = getDefaultMapper().add(this)
+    fun Version.add() = getDefaultMapper().add(this)
+    fun UninstallRecord.add() = getDefaultMapper().add(this)
+    fun Connect.delete() = getDefaultMapper().delete(this)
+    fun Version.delete() = getDefaultMapper().delete(this)
+    fun UninstallRecord.delete() = getDefaultMapper().delete(this)
+    fun Connect.update() = getDefaultMapper().update(this)
+    fun Version.update() = getDefaultMapper().update(this)
+    fun UninstallRecord.update() = getDefaultMapper().update(this)
 }

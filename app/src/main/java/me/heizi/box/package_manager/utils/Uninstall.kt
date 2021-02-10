@@ -1,13 +1,13 @@
 package me.heizi.box.package_manager.utils
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
+import kotlinx.coroutines.*
 import me.heizi.box.package_manager.dao.DB.Companion.updateDB
 import me.heizi.box.package_manager.dao.entities.UninstallRecord
 import me.heizi.box.package_manager.models.BackupType
+import me.heizi.box.package_manager.models.UninstallInfo
 import me.heizi.kotlinx.shell.CommandResult
 import me.heizi.kotlinx.shell.su
+
 
 /**
  * Uninstall
@@ -74,3 +74,15 @@ fun CoroutineScope.uninstall(
     }
     r
 }
+
+suspend fun uninstall(info: UninstallInfo, backupType: BackupType, mountString: String): Deferred<CommandResult> =
+    coroutineScope {
+        this.uninstall(
+            backupType = backupType,
+            mountString = mountString,
+            packageName = info.packageName,
+            name = info.applicationName,
+            sDir = info.sourceDirectory,
+            dDir = info.dataDirectory
+        )
+    }

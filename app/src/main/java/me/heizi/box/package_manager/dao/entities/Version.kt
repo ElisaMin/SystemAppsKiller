@@ -10,5 +10,5 @@ data class Version(
     val id: Int? = null,
     val name:String,
     @ColumnInfo(name = "create_time")
-    val createTime:String
+    val createTime:Int
 )

@@ -17,6 +17,6 @@ data class VersionConnected(
     val id: Int = 0,
     val name: String,
     val isBackup: Boolean =true,
-    val createTime: String,
+    val createTime: Int,
     val apps:List<UninstallRecord>
 )
