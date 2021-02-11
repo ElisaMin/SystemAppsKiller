@@ -33,7 +33,6 @@ class Adapter constructor(
      * 协程的范围
      */
     private val scope: CoroutineScope,
-
     private val service: AdapterService,
     private val processing:()->Unit,
     private val stopProcessing:()->Unit

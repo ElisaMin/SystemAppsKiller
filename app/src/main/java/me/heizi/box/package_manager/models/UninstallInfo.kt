@@ -6,6 +6,7 @@ interface UninstallInfo{
     val packageName:String
     val sourceDirectory:String
     val dataDirectory:String?
+
     data class DefaultUninstallInfo(
         override val applicationName:String,
         override val packageName:String,

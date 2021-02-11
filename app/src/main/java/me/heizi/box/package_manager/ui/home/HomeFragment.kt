@@ -130,17 +130,23 @@ class HomeFragment : Fragment(R.layout.home_fragment) {
         return when(item.itemId) {
             R.id.launch_settings_menu -> {
                 findNavController().navigate(R.id.action_homeFragment_to_settingsFragment)
+//                findNavController().navigateUp()
                 true
             }
             R.id.launch_export_menu -> {
-
-                false
+                findNavController().navigate(R.id.action_homeFragment_to_exportFragment)
+//                findNavController().navigateUp()
+                true
+            }
+            R.id.launch_input_menu -> {
+                findNavController().navigate(R.id.action_homeFragment_to_cleanFragment)
+//                findNavController().navigateUp()
+                true
             }
             R.id.launch_help_menu -> {
                 findNavController().navigate(R.id.action_homeFragment_to_helpFragment)
                 true
             }
-            R.id.launch_input_menu -> {false}
             R.id.search_menu_home -> {true}
             else -> false
         }

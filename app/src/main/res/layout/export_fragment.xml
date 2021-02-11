@@ -16,6 +16,15 @@
         android:orientation="vertical"
         tools:context=".ui.export.ExportFragment">
 
+        <androidx.recyclerview.widget.RecyclerView
+            app:reverseLayout="true"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            android:adapter="@{viewModel.adapter}"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginHorizontal="8dp"
+            tools:itemCount="13"
+            tools:listitem="@layout/item_title_content_view" />
         <com.google.android.material.button.MaterialButton
             android:onClick="@{(view)->viewModel.createNewVersion(view.context)}"
             android:id="@+id/button"
@@ -25,12 +34,5 @@
             android:text="添加版本"
             app:icon="@drawable/ic_baseline_add_24" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:adapter="@{viewModel.adapter}"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginHorizontal="8dp"
-            tools:itemCount="13"
-            tools:listitem="@layout/item_title_content_view" />
     </LinearLayout>
 </layout>

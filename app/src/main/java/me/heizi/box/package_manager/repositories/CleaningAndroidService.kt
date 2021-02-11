@@ -109,7 +109,7 @@ class CleaningAndroidService : Service() {
      * 显示停止按钮和帮助文字提示正在耗电和点击后的后果。
      */
     private suspend fun notifyDone() = coroutineScope { launch(Main) {
-        val pIntent = PendingIntent.getBroadcast(this@CleaningAndroidService,0, Intent(this@CleaningAndroidService,StopForegroundService::class.java),0)
+        val pIntent = PendingIntent.getBroadcast(this@CleaningAndroidService,0, Intent(this@CleaningAndroidService,StopForegroundService::class.java),PendingIntent.FLAG_IMMUTABLE)
         val n = NotificationCompat.Builder(this@CleaningAndroidService, DONE_NOTIFY_CHANNEL_ID)
             .setContentTitle("卸载完成")
             .setContentText("关闭前台服务时可能通知会随之消失，请根据耗电情况自行关闭本服务。")
@@ -118,10 +118,22 @@ class CleaningAndroidService : Service() {
             .build()
         notificationManager.notify(DONE_NOTIFY_ID,n)
     } }
+
+    /**
+     * 通知开始
+     *
+     */
+    private suspend fun notifyStart() = coroutineScope { launch(Main) {
+        val n = NotificationCompat.Builder(this@CleaningAndroidService, DONE_NOTIFY_CHANNEL_ID)
+            .setContentTitle("卸载开始")
+            .setSmallIcon(R.drawable.ic_outline_done_24)
+            .build()
+        notificationManager.notify(DONE_NOTIFY_ID,n)
+    } }
     private fun buildChannel() {
         NotificationChannel(PROCESS_NOTIFY_CHANNEL_ID,"正在卸载",NotificationManager.IMPORTANCE_MIN).let(notificationManager::createNotificationChannel)
         NotificationChannel(FAILED_NOTIFY_CHANNEL_ID,"卸载失败",NotificationManager.IMPORTANCE_DEFAULT).let(notificationManager::createNotificationChannel)
-        NotificationChannel(DONE_NOTIFY_CHANNEL_ID,"卸载完成",NotificationManager.IMPORTANCE_HIGH).let(notificationManager::createNotificationChannel)
+        NotificationChannel(DONE_NOTIFY_CHANNEL_ID,"卸载通知",NotificationManager.IMPORTANCE_MAX).let(notificationManager::createNotificationChannel)
     }
 
     private suspend fun collectResults(pair: Pair <UninstallInfo,CommandResult>): Unit = coroutineScope {

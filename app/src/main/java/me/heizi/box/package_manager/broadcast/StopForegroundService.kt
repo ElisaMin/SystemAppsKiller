@@ -11,6 +11,7 @@ import me.heizi.box.package_manager.utils.dialog
 class StopForegroundService : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
+        Log.i(TAG, "onReceive: got it")
         try {
             CleaningAndroidService.intent(context).let {
                 context.stopService(it)

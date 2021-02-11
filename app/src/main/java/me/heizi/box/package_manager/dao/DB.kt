@@ -40,7 +40,7 @@ abstract class DB: RoomDatabase() {
 
         fun CoroutineScope.updateDB(
                 dispatcher: CoroutineDispatcher = IO,
-                block:suspend DB.()->Unit
+                block: DB.()->Unit
         ) = launch(dispatcher) { block(INSTANCE) }
     }
     abstract fun getDefaultMapper():DBMapper

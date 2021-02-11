@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_one"
-    app:startDestination="@id/exportFragment">
+    app:startDestination="@id/preconfigFragment">
 
     <fragment
         android:id="@+id/homeFragment"
@@ -39,11 +39,11 @@
         android:name="me.heizi.box.package_manager.ui.sheet.HelpFragment"
         android:label="fragment_item_list"
         tools:layout="@layout/fragment_item_list" />
-    <fragment
+    <dialog
         android:id="@+id/cleanFragment"
         android:name="me.heizi.box.package_manager.ui.clean.CleanFragment"
         android:label="CleanFragment" />
-    <fragment
+    <dialog
         android:id="@+id/exportFragment"
         android:name="me.heizi.box.package_manager.ui.export.ExportFragment"
         android:label="ExportFragment" />

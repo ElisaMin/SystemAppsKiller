@@ -3,11 +3,13 @@ package me.heizi.box.package_manager.ui.clean
 import android.content.Context
 import android.content.ServiceConnection
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
-import androidx.fragment.app.Fragment
+import android.view.ViewGroup
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import me.heizi.box.package_manager.Application.Companion.DEFAULT_MOUNT_STRING
 import me.heizi.box.package_manager.R
 import me.heizi.box.package_manager.SingletonActivity.Companion.parent
@@ -17,7 +19,7 @@ import me.heizi.box.package_manager.repositories.CleaningAndroidService
 import me.heizi.box.package_manager.utils.dialogBuilder
 import me.heizi.box.package_manager.utils.longToast
 
-class CleanFragment : Fragment(R.layout.clean_fragment) {
+class CleanFragment : BottomSheetDialogFragment() {
     private val binding by lazy { CleanFragmentBinding.bind(requireView()) }
     private val viewModel:CleanViewModel by viewModels(factoryProducer = { object :ViewModelProvider.Factory{
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
@@ -26,7 +28,7 @@ class CleanFragment : Fragment(R.layout.clean_fragment) {
     } })
 
     private val defaultViewModelService = object : CleanViewModel.Service {
-        override fun getBackupType() = callDialogGetBackupType()
+        override fun withBackupTypeAwait(block: (BackupType) -> Unit) { callDialogGetBackupType(block) }
         override fun longToast(string: String) { context?.longToast(string) }
         override fun getMountString(): String = parent.viewModel.preferences.mountString ?: DEFAULT_MOUNT_STRING
         override fun startAndBindService(connection: ServiceConnection) {
@@ -37,7 +39,13 @@ class CleanFragment : Fragment(R.layout.clean_fragment) {
                 }
             }
         }
+
+        override fun startedCallback() {
+            dismiss()
+        }
     }
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? { return layoutInflater.inflate(R.layout.clean_fragment,container) }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.lifecycleOwner = viewLifecycleOwner
@@ -45,19 +53,17 @@ class CleanFragment : Fragment(R.layout.clean_fragment) {
         viewModel.stopProcessing()
     }
 
-    private fun callDialogGetBackupType():BackupType {
-        var type:BackupType? = null
+    private fun callDialogGetBackupType(block:(BackupType)->Unit) {
         requireContext().dialogBuilder(
                 title = "请选择备份模式",
         ).apply {
             setItems(arrayOf("不备份","把apk改名为apk.bak","把APK移动到内部存储空间")) {_,i ->
-                type = when(i) {
+                when(i) {
                     0 -> BackupType.JustRemove
                     1 -> BackupType.BackupWithOutPath
                     else -> BackupType.BackupWithPath.Default
-                }
+                }.let(block)
             }
         }.show()
-        return  type!!
     }
 }

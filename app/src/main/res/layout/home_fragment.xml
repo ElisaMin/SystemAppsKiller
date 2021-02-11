@@ -54,7 +54,7 @@
             android:adapter="@{vm.adapter}"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
             tools:itemCount="17"
-            tools:listitem="@layout/item_app_uninstall" />
+            tools:listitem="@layout/item_app_uninstall_with_title" />
 
 
 

@@ -9,41 +9,43 @@
             type="me.heizi.box.package_manager.ui.clean.CleanViewModel" />
     </data>
 
-    <LinearLayout
+
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        tools:context=".ui.clean.CleanFragment">
+        android:layout_height="match_parent">
 
-        <me.heizi.box.package_manager.custom_view.IconButton
-            android:layout_marginEnd="16dp"
-            android:onClick="@{()->viewModel.onDoneBtnClicked()}"
-            android:icon="@drawable/ic_outline_done_24"
-            app:tint="?android:textColorPrimary"
-            android:layout_gravity="end"
-            android:layout_width="48dp"
-            android:layout_height="48dp" />
-
-
-        <ProgressBar
-            android:visibility="@{viewModel.processing}"
-            android:id="@+id/progressBar2"
-            style="?android:attr/progressBarStyleHorizontal"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:indeterminate="true" />
-
-        <ScrollView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <LinearLayout
+            android:orientation="vertical">
+            <androidx.recyclerview.widget.RecyclerView
+                android:scrollbarSize="5dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:adapter="@{viewModel.adapter}"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                app:reverseLayout="true"
+                tools:itemCount="3"
+                tools:listitem="@layout/item_uninstall_info_input" />
 
+            <ProgressBar
+                android:visibility="@{viewModel.processing}"
+                android:id="@+id/progressBar2"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:indeterminate="true" />
+
+            <LinearLayout
+                android:padding="16dp"
+                android:layout_gravity="center"
+                android:orientation="horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
                 <com.google.android.material.textfield.TextInputLayout
-                    android:layout_margin="16dp"
+                    android:gravity="center"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="16dp"
                     android:hint="可卸载文本"
                     app:helperText="@{viewModel.helpText}"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -56,15 +58,17 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content" />
                 </com.google.android.material.textfield.TextInputLayout>
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    tools:itemCount="13"
-                    tools:listitem="@layout/item_uninstall_info_input" />
-
+                <com.google.android.material.button.MaterialButton
+                    android:onClick="@{()->viewModel.onDoneBtnClicked()}"
+                    android:visibility="@{viewModel.isUninstallable()}"
+                    android:gravity="center"
+                    android:layout_gravity="center"
+                    android:text="确认卸载"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
             </LinearLayout>
-        </ScrollView>
 
-    </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
 </layout>

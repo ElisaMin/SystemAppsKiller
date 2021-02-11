@@ -1,5 +1,6 @@
 package me.heizi.box.package_manager.ui.clean
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -7,9 +8,11 @@ import android.widget.FrameLayout
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.R
 import me.heizi.box.package_manager.models.UninstallInfo
 import me.heizi.box.package_manager.utils.bindText
+import java.util.*
 
 class Adapter:ListAdapter<UninstallInfo,Adapter.ViewHolder>(differ){
 
@@ -21,11 +24,13 @@ class Adapter:ListAdapter<UninstallInfo,Adapter.ViewHolder>(differ){
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        Log.i(TAG, "onCreateViewHolder: called")
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_uninstall_info_input,parent,false)
         return ViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        Log.i(TAG, "onBindViewHolder: called $position")
         with(getItem(position)){ with(holder) {
             title =
             """ ${applicationName.takeIf { it!=packageName }?.plus(":")?:""} $applicationName """
@@ -38,9 +43,19 @@ class Adapter:ListAdapter<UninstallInfo,Adapter.ViewHolder>(differ){
             }
         } }
     }
+
+    private var finalList:ArrayList<UninstallInfo> = ArrayList()
+
+    override fun submitList(list: MutableList<UninstallInfo>?) {
+        val arrayList = ArrayList<UninstallInfo>()
+        list?.let { arrayList.addAll(it) }
+        finalList = arrayList
+        super.submitList(list)
+    }
     private fun removeItem(position: Int) {
-        currentList.removeAt(position)
+        finalList.removeAt(position)
         notifyItemRemoved(position)
+        submitList(finalList)
         notifyItemRangeChanged(position-1,3)
     }
     companion object {
@@ -48,7 +63,7 @@ class Adapter:ListAdapter<UninstallInfo,Adapter.ViewHolder>(differ){
             override fun areItemsTheSame(oldItem: UninstallInfo, newItem: UninstallInfo): Boolean =
                 oldItem.packageName == newItem.packageName
             override fun areContentsTheSame(oldItem: UninstallInfo, newItem: UninstallInfo): Boolean =
-                oldItem==newItem
+                oldItem.equals(newItem)
         }
     }
 }

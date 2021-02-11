@@ -16,18 +16,16 @@ import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
-import kotlinx.coroutines.async
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import me.heizi.box.package_manager.Application.Companion.PACKAGE_NAME
 import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.Application.Companion.app
 import me.heizi.box.package_manager.R
+import me.heizi.box.package_manager.dao.DB
 import me.heizi.box.package_manager.dao.DB.Companion.databaseMapper
 import me.heizi.box.package_manager.dao.DB.Companion.updateDB
 import me.heizi.box.package_manager.dao.entities.Connect
@@ -70,24 +68,33 @@ class ExportViewModel(a: Application) : AndroidViewModel(a) {
         val createDialog = async(Main) {
             val editText = EditText(context)
             context.dialog(
-                DialogBtns.Positive("添加") { _, _->
+                DialogBtns.Positive("添加") { _, _ ->
+                    Log.i(TAG, "createNewVersion: click is will")
                     val name = editText.text.toString()
                     val time = System.currentTimeMillis().toInt()
-                    val recordVersion = Version(name = name,createTime = time)
-                    updateDB {
-                        recordVersion.add()
-                        databaseMapper {
-                            val version = findVersion(recordVersion.name,recordVersion.createTime)?.id?:0
+                    val recordVersion = Version(name = name, createTime = time)
+                    MainScope().run {
+                        launch(IO) {
+                            Log.i(TAG, "createNewVersion: started recording")
+                            DB.INSTANCE.getDefaultMapper().add(recordVersion)
+                        }.invokeOnCompletion { launch(IO) { with(DB.INSTANCE.getDefaultMapper()) {
+                            Log.i(TAG, "createNewVersion: completion")
+                            val version = findVersion(recordVersion.name, recordVersion.createTime)?.id ?: 0
+                            Log.i(TAG, "createNewVersion: collect before")
                             getAllUninstalled().collectLatest {
+                                Log.i(TAG, "createNewVersion: on collection")
+                                var i = 0
+
                                 it.forEach {
-                                    Connect(version = version,record = it.id!!).add()
+                                    add(Connect(version = version, record = it.id!!))
+                                    i++
                                 }
                                 launch(Main) {
-                                    app.shortToast("添加成功,本次添加了${it.size}个应用，费时${System.currentTimeMillis()-time}。")
+                                    app.shortToast("添加成功,本次添加了${i}个应用，费时${System.currentTimeMillis() - time}。")
+                                    this.cancel()
                                 }
-                                cancel()
                             }
-                        }.await()
+                        } } }
                     }
                 },
                 show = false,
@@ -154,15 +161,14 @@ class ExportViewModel(a: Application) : AndroidViewModel(a) {
          */
         private fun copy(version: Version,context: Context){
             startProgressing()
-
             scope.updateDB {
                 val l = getDefaultMapper().findVersionUninstallList(version.id!!)
                 try {
                     val v = VersionConnected(version.id, version.name, false, version.createTime, l)
-                    val s = Compressor.generateV1(v)
+                    val s = scope.async{ Compressor.generateV1(v) }
                     scope.launch(Main) {
                         (context.getSystemService(CLIPBOARD_SERVICE) as ClipboardManager)
-                            .setPrimaryClip(ClipData.newPlainText("$PACKAGE_NAME.copyText",s))
+                            .setPrimaryClip(ClipData.newPlainText("$PACKAGE_NAME.copyText",s.await()))
                         context.shortToast("复制成功")
                         stopProgressing()
                     }
@@ -171,6 +177,7 @@ class ExportViewModel(a: Application) : AndroidViewModel(a) {
                     scope.launch(Main) {
                         context.longToast("失败：${e.message}")
                     }
+
                     stopProgressing()
                 }
             }
@@ -179,6 +186,6 @@ class ExportViewModel(a: Application) : AndroidViewModel(a) {
             }
         }
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder = ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.export_fragment,parent,false))
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder = ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_title_content_view,parent,false))
     }
 }

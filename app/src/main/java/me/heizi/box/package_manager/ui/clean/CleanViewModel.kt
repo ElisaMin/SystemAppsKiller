@@ -9,11 +9,9 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.Main
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.models.BackupType
@@ -28,10 +26,11 @@ private val service:Service
 ) : ViewModel() {
 
     interface Service {
-        fun getBackupType():BackupType
+        fun withBackupTypeAwait(block:(BackupType)->Unit)
         fun longToast(string: String)
         fun getMountString():String
         fun startAndBindService(connection: ServiceConnection)
+        fun startedCallback()
     }
 
     val processing get() = _processing.asStateFlow()
@@ -40,13 +39,15 @@ private val service:Service
 
     val helpText get() = _helpText.asStateFlow()
 
+    val isUninstallable get() =  _isUninstallable.asStateFlow()
+    private val _isUninstallable = msf(false)
     private val _processing = msf(true)
 
     /**
      * Uninstall info
      * 变动时扔到adapter里面展示给用户
      */
-    private val _uninstallsInfo:MutableSharedFlow<JsonContent> = MutableSharedFlow()
+    private val _uninstallsInfo:MutableSharedFlow<JsonContent?> = MutableSharedFlow()
     private val _helpText:msf<String?> = msf(null)
     fun startProcessing() {
         _processing set  true
@@ -54,12 +55,14 @@ private val service:Service
     fun stopProcessing() {
         _processing set false
     }
-    var isUsing = false
     init {
-        viewModelScope.launch(Dispatchers.Default) {
-            textInput.filter {
-                it.length>6
-            }.collectLatest {
+        viewModelScope.launch(Default) {
+            textInput.collectLatest {
+                if (it.length <= 6) {
+                    _helpText set null
+
+                    return@collectLatest
+                }
                 startProcessing()
                 try {
                     val jsonContent = Compressor.buildJson(it)
@@ -67,19 +70,25 @@ private val service:Service
                         _uninstallsInfo.emit(jsonContent)
                     }
                     Log.i(TAG, "workingwill")
-                    isUsing = true
+                    _isUninstallable set true
+                    _helpText set null
                 }catch (e:Exception) {
                     Log.i(TAG, "wrongWithDecoding ",e)
-                    isUsing = false
+                    _isUninstallable set false
                     _helpText set e.message
+                    _uninstallsInfo.emit(null)
                 } finally {
                     stopProcessing()
                 }
             }
         }
         viewModelScope.launch(Dispatchers.Unconfined) {
-            _uninstallsInfo.collectLatest {
-                launch(Main) { adapter.submitList(it.apps.toMutableList()) }
+            _uninstallsInfo
+                .collectLatest {
+                launch(Main) {
+                    Log.i(TAG, "list: changed on cleaning")
+                    adapter.submitList(it?.apps?.toMutableList())
+                }
             }
         }
 
@@ -91,24 +100,23 @@ private val service:Service
      * 当点击时弹出窗口让用户选择备份模式
      */
     fun onDoneBtnClicked() {
-        Log.i(TAG, "onDoneBtnClicked: $isUsing")
-        if (isUsing) {
-            val task = viewModelScope.async(Main){ service.getBackupType() }
-            val list = adapter.currentList
-            val mountString = service.getMountString()
-            val connect = object : ServiceConnection {
-                override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                    if (service is CleaningAndroidService.Binder) {
-                        viewModelScope.launch {
-                            task.await().let {
-                                service.startUninstall(viewModelScope,list,it,mountString)
+        if (_isUninstallable.value) {
+            service.withBackupTypeAwait {
+                val list = adapter.currentList
+                val mountString = service.getMountString()
+                val connect = object : ServiceConnection {
+                    override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
+                        if (binder is CleaningAndroidService.Binder) {
+                            viewModelScope.launch {
+                                binder.startUninstall(viewModelScope,list,it,mountString)
+                                service.startedCallback()
                             }
                         }
                     }
+                    override fun onServiceDisconnected(name: ComponentName?) {}
                 }
-                override fun onServiceDisconnected(name: ComponentName?) {}
+                service.startAndBindService(connect)
             }
-            service.startAndBindService(connect)
         } else {
             service.longToast("似乎列表还没有就绪")
         }

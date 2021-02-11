@@ -100,23 +100,23 @@ class TextViewTextBinding (
     parent: View,
     @IdRes private val id:Int
 ) {
-    private val view:TextView by lazy { parent.findViewById(id) }
+    private val view:TextView? by lazy { parent.findViewById(id) }
     operator fun getValue(thisRef: Any?, property: KProperty<*>): String? {
-        return view.text?.toString()
+        return view?.text?.toString()
     }
     operator fun setValue(thisRef: Any?, property: KProperty<*>, value: String?) {
-        view.text = value
+        view?.text = value
     }
 }
 class ClickBinding (
     parent: View,
     @IdRes private val id:Int
 ) {
-    private val view:View by lazy { parent.findViewById(id) }
+    private val view:View? by lazy { parent.findViewById(id) }
     operator fun getValue(thisRef: Any?, property: KProperty<*>): (()->Unit)? {
         return null
     }
     operator fun setValue(thisRef: Any?, property: KProperty<*>, block:(()->Unit)?)  {
-        view.setOnClickListener { block?.invoke() }
+        view?.setOnClickListener { block?.invoke() }
     }
 }
