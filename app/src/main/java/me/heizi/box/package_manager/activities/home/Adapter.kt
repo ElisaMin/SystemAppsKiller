@@ -1,7 +1,8 @@
-package me.heizi.box.package_manager.ui.home
+package me.heizi.box.package_manager.activities.home
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
+import android.graphics.drawable.Drawable
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -11,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import me.heizi.box.package_manager.Application.Companion.TAG
@@ -33,11 +35,20 @@ class Adapter constructor(
      * 协程的范围
      */
     private val scope: CoroutineScope,
-    private val service: AdapterService,
+    private val service: Service,
     private val processing:()->Unit,
     private val stopProcessing:()->Unit
 ) :RecyclerView.Adapter<Adapter.ViewHolder>(),Filterable {
 
+    interface Service {
+        val allAppF: StateFlow<MutableList<ApplicationInfo>>
+        val allApps get() =  allAppF.value
+        fun removeItemFormAllApps(applicationInfo: ApplicationInfo) = allAppF.value.remove(applicationInfo)
+        fun getAppLabel(applicationInfo: ApplicationInfo):String
+        fun getAppIcon(applicationInfo: ApplicationInfo): Drawable?
+        fun getPrevPath(applicationInfo: ApplicationInfo):String
+        fun uninstall(applicationInfo: ApplicationInfo, position: Int)
+    }
 
 
     init {
@@ -46,6 +57,7 @@ class Adapter constructor(
             service.allAppF.collectLatest {
                 processing()
                 launch(Main) {
+                    current=ArrayList(service.allApps)
                     notifyDataSetChanged()
                     stopProcessing()
                 }
@@ -93,7 +105,7 @@ class Adapter constructor(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder
         = ItemAppUninstallWithTitleBinding
             .inflate(LayoutInflater.from(parent.context),parent,false)
-            .let(::ViewHolder)
+            .let(Adapter::ViewHolder)
             .also { scope.launch { it.bind(viewType) } }
 
 
@@ -108,10 +120,10 @@ class Adapter constructor(
         } else {
             val prev = service.getPrevPath(current[position - 1])
             val notSame = now.diffPreviousPathAreNotSame(prev)
-            if (notSame) title = prev
+            if (notSame) title = now
         }
         val name = service.getAppLabel(item)
-        val viewModel = ViewHolder.ViewModel(title,name,item.sourceDir)
+        val viewModel = ViewHolder.ViewModel(title, name, item.sourceDir)
         binding.viewModel = viewModel
     }
 

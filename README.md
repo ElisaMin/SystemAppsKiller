@@ -100,3 +100,32 @@ GPLv3.0
   }
 ]
 ```
+## 包含关系
+```json5
+{
+  application: {
+    actvities: [
+      {
+        id: 0,
+        name: "启动器 用于跳转到1",
+        type: "viewModelOnly"
+      }, {
+        id: 1,
+        name: "展示主页和跳转",
+        fragments: [
+          {
+            name: ""
+          },
+        ]
+      }, {
+        id: 2,
+        name: "设置",
+        type: "settings"
+      }
+    ],
+    broadcast: {
+      
+    }
+  }
+}
+```

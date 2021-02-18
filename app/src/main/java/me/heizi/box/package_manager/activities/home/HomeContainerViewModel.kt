@@ -1,17 +1,19 @@
-package me.heizi.box.package_manager
+package me.heizi.box.package_manager.activities.home
 
 import android.app.Application
-import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import me.heizi.box.package_manager.Application.Companion.DEFAULT_MOUNT_STRING
-import me.heizi.box.package_manager.Application.Companion.PREFERENCES
+import me.heizi.box.package_manager.Application.Companion.app
 import me.heizi.box.package_manager.models.BackupType
-import me.heizi.box.package_manager.models.PreferencesMapper
 import me.heizi.box.package_manager.repositories.PackageRepository
+import me.heizi.box.package_manager.utils.set
 
-class SingletonViewModel(application: Application) : AndroidViewModel(application) {
-    val preferences = PreferencesMapper(application.getSharedPreferences(PREFERENCES,Context.MODE_PRIVATE))
+class HomeContainerViewModel(application: Application) : AndroidViewModel(application) {
+
+    val preferences = app.preferenceMapper
     val packageRepository = PackageRepository(
             viewModelScope,application,
             getMountString = {preferences.mountString?: DEFAULT_MOUNT_STRING},
@@ -26,5 +28,23 @@ class SingletonViewModel(application: Application) : AndroidViewModel(applicatio
                 } else BackupType.JustRemove
             },
     )
+    val adapter by lazy {
+        Adapter(
+            viewModelScope,
+            packageRepository.defaultAdapterService,
+            stopProcessing = {_processing set  false},
+            processing = { _processing set true }
+        )
+    }
+    val processing get() = _processing.asStateFlow()
+
+
+    private val _processing = MutableStateFlow(true)
+
+    init {
+    }
+    fun stopProcess() {
+        _processing set false
+    }
 
 }

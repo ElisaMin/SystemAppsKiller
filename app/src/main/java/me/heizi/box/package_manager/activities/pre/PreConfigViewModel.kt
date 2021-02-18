@@ -1,4 +1,4 @@
-package me.heizi.box.package_manager.ui.pre_config
+package me.heizi.box.package_manager.activities.pre
 
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
@@ -19,7 +19,7 @@ import me.heizi.kotlinx.shell.CommandResult.Failed
 import me.heizi.kotlinx.shell.CommandResult.Success
 import me.heizi.kotlinx.shell.su
 
-class PreconfigViewModel : ViewModel() {
+class PreConfigViewModel : ViewModel() {
 
     /**
      * START-> CheckSU-> CheckSystemWriteable-> DONE
@@ -28,11 +28,11 @@ class PreconfigViewModel : ViewModel() {
      */
     sealed class Status {
         object Ready : Status()
-        object CheckSu:Status()
-        class SuNotFound(val error:String?):Status()
-        object CheckSystemWritable:Status()
-        class UnwritableSystem(val result: Failed):Status()
-        object Done:Status()
+        object CheckSu: Status()
+        class SuNotFound(val error:String?): Status()
+        object CheckSystemWritable: Status()
+        class UnwritableSystem(val result: Failed): Status()
+        object Done: Status()
     }
 
     val status get() = _status.asSharedFlow()
@@ -166,13 +166,13 @@ ${failed.processingMessage.takeIf { it.isNotEmpty() } ?:"无"}
         }
     }}
 
-    private inline fun testSu(crossinline block:(CommandResult)->Status) {
+    private inline fun testSu(crossinline block:(CommandResult)-> Status) {
         viewModelScope.launch(IO) {
             updateStatus(block(su("echo hello world",dispatcher = Unconfined).await()))
         }
     }
 
-    private fun testRW(remove:Boolean = false,block:(CommandResult)->Status) {
+    private fun testRW(remove:Boolean = false,block:(CommandResult)-> Status) {
 
         Log.i(TAG, "testRW: called")
 

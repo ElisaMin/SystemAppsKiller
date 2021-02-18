@@ -7,7 +7,7 @@
         
         <variable
             name="vm"
-            type="me.heizi.box.package_manager.ui.pre_config.PreconfigViewModel" />
+            type="me.heizi.box.package_manager.activities.pre.PreConfigViewModel" />
 
     </data>
 

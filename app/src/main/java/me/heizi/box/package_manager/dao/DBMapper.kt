@@ -15,16 +15,27 @@ interface DBMapper {
 
     @Query("select * from versions")
     fun getALlVersions(): Flow<List<Version>>
+
     @Query("select * from connecting")
     fun getAllConnected(): Flow<List<Connect>>
+
     @Query("select * from recording")
-    fun getAllUninstalled(): Flow<List<UninstallRecord>>
+    fun getAllUninstalleds(): Flow<List<UninstallRecord>>
+
+    @Query("select * from recording")
+    fun getAllUninstalled(): List<UninstallRecord>
+
     @Query("select max(id) from versions")
     fun getLastVersion():Int?
+
     @Query("select * from versions where name = :name and create_time = :time")
     fun findVersion(name:String,time:Int):Version?
+    @Query("select id from versions where name = :name and create_time = :time")
+    fun findVersionID(name:String,time:Int):Int?
+
     @Query("select count(*) from recording")
     fun getUninstalledCount():Int
+
     @Query("select r.* from  recording r,connecting c where r.id = c.record_id and version_id =:versionId ")
     fun findVersionUninstallList(versionId:Int):List<UninstallRecord>
 

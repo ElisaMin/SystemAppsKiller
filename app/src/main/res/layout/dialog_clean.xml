@@ -6,11 +6,11 @@
     <data>
         <variable
             name="viewModel"
-            type="me.heizi.box.package_manager.ui.clean.CleanViewModel" />
+            type="me.heizi.box.package_manager.activities.home.fragments.CleanDialog.ViewModel" />
     </data>
 
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -29,7 +29,7 @@
                 tools:listitem="@layout/item_uninstall_info_input" />
 
             <ProgressBar
-                android:visibility="@{viewModel.processing}"
+                android:visibility="@{viewModel.progressing}"
                 android:id="@+id/progressBar2"
                 style="?android:attr/progressBarStyleHorizontal"
                 android:layout_width="match_parent"
@@ -58,17 +58,16 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content" />
                 </com.google.android.material.textfield.TextInputLayout>
-                <com.google.android.material.button.MaterialButton
-                    android:onClick="@{()->viewModel.onDoneBtnClicked()}"
-                    android:visibility="@{viewModel.isUninstallable()}"
-                    android:gravity="center"
-                    android:layout_gravity="center"
-                    android:text="确认卸载"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-            </LinearLayout>
 
+                <com.google.android.material.button.MaterialButton
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:insetBottom="0dp"
+                    android:onClick="@{()->viewModel.onDoneBtnClicked()}"
+                    android:text="确认卸载"
+                    android:visibility="@{viewModel.isUninstallable()}" />
+            </LinearLayout>
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
 </layout>

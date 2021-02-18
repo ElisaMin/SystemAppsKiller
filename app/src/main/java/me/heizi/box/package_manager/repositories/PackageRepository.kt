@@ -15,8 +15,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import me.heizi.box.package_manager.Application.Companion.TAG
+import me.heizi.box.package_manager.activities.home.Adapter
 import me.heizi.box.package_manager.models.BackupType
-import me.heizi.box.package_manager.ui.home.AdapterService
 import me.heizi.box.package_manager.utils.PathFormatter.getPreviousPath
 import me.heizi.box.package_manager.utils.longToast
 import me.heizi.box.package_manager.utils.uninstall
@@ -45,7 +45,7 @@ class PackageRepository(
 
     private val systemApps get()  = pm.getInstalledApplications(PackageManager.MATCH_SYSTEM_ONLY)
     private val pm:PackageManager = context.packageManager
-    private val _systemAppsFlow by lazy { MutableStateFlow(systemApps) }
+    private val _systemAppsFlow: MutableStateFlow<MutableList<ApplicationInfo>> by lazy { MutableStateFlow(mutableListOf()) }
     private val _uninstallStatues = MutableSharedFlow<UninstallStatues>()
     /**
      * Key:PackageName Value:PrevPath
@@ -64,7 +64,7 @@ class PackageRepository(
             }
         }
         scope.launch(IO) {
-            val time = _systemAppsFlow.value.sort().await()
+            val time = systemApps.sort().await()
             val all = _systemAppsFlow.value.size
             val score = (((time*2).toFloat()/all)*100).roundToInt()
             launch(Main) {
@@ -74,7 +74,7 @@ class PackageRepository(
     }
 
 
-    val defaultAdapterService = object:AdapterService {
+    val defaultAdapterService = object: Adapter.Service {
         override val allAppF: StateFlow<MutableList<ApplicationInfo>>
             get() = _systemAppsFlow
         override fun getAppLabel(applicationInfo: ApplicationInfo): String

@@ -14,8 +14,6 @@
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
-    <queries />
-
     <application
         android:name=".Application"
         android:allowBackup="true"
@@ -24,10 +22,11 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.PackageManager">
+
         <receiver
             android:name=".broadcast.StopForegroundService"
             android:enabled="true"
-            android:exported="false"></receiver>
+            android:exported="false" />
 
         <service
             android:name=".repositories.CleaningAndroidService"
@@ -35,11 +34,17 @@
             android:exported="false" />
 
         <activity
-            android:name=".SingletonActivity"
+            android:name=".activities.home.HomeActivity"
             android:launchMode="singleInstance">
+        </activity>
+
+        <activity
+            android:name=".activities.SettingsActivity"
+            android:launchMode="singleInstance"/>
+        <activity
+            android:name=".activities.pre.PreConfigActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>

@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">屑载器</string>
+    <string name="project_repo">https://github.com/ElisaMin/SystemAppsKiller</string>
 </resources>

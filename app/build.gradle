@@ -9,29 +9,55 @@ android {
     compileSdkVersion 30
     buildToolsVersion "30.0.3"
 
+    signingConfigs {
+        config {
+            enableV3Signing(true)
+            enableV4Signing(true)
+        }
+    }
     defaultConfig {
         applicationId "me.heizi.box.package_manager"
         minSdkVersion 26
         targetSdkVersion 30
         versionCode 1
-        versionName "1.0"
-
+        versionName "0.0.1-alpha01"
+        resValue "string","versionName",versionName
+        resConfigs "zh-rCN"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
     }
 
     lintOptions {
 //        abortOnError false
     }
 
+    // 开启minify会导致炸裂
     buildTypes {
         release {
-            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            applicationVariants.all { variant ->
+                variant.outputs.all {
+                    outputFileName = "uninstaller_${defaultConfig.versionName}.apk"
+                }
+            }
+        }
+        alpha {
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            applicationVariants.all { variant ->
+                variant.outputs.all {
+                    outputFileName = "uninstaller_${defaultConfig.versionName}.apk"
+                }
+            }
+        }
+        debug {
+            applicationIdSuffix ".debug"
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+
     }
     buildFeatures {
-        dataBinding = true
         viewBinding = true
+        dataBinding = true
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -43,28 +69,19 @@ android {
 }
 
 dependencies {
-//    没有文档就很烦
-//    implementation 'org.jetbrains.kotlinx:ki-shell:0.3.2'
-//    还没我写的好用
-//    implementation "androidx.datastore:datastore-preferences:1.0.0-alpha06"
     implementation project(':khell')
-//    implementation "com.google.dagger:hilt-android:2.31.1-alpha"
-    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.3.0-rc01'
-//    kapt "com.google.dagger:hilt-android-compiler:2.31.1-alpha"
-//    implementation "androidx.paging:paging-runtime-ktx:3.0.0-alpha13"
+    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.3.0'
     implementation 'androidx.core:core-ktx:1.3.2'
     implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation 'com.google.android.material:material:1.2.1'
+    implementation 'com.google.android.material:material:1.3.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
     implementation 'androidx.room:room-ktx:2.3.0-beta01'
-    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.1.0'
-    kapt "androidx.room:room-compiler:2.3.0-beta01"
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.2.0'
-    implementation 'androidx.fragment:fragment-ktx:1.3.0-rc02'
     implementation 'androidx.preference:preference-ktx:1.1.1'
-    implementation 'androidx.navigation:navigation-fragment-ktx:2.3.3'
-    implementation 'androidx.navigation:navigation-ui-ktx:2.3.3'
+    kapt "androidx.room:room-compiler:2.3.0-beta01"
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.3.0'
+    implementation 'androidx.fragment:fragment-ktx:1.3.0'
+    implementation 'androidx.preference:preference-ktx:1.1.1'
     testImplementation 'junit:junit:4.13.1'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'

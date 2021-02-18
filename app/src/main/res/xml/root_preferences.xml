@@ -14,7 +14,11 @@
             android:summary="每打开一次新的终端对话进行修改系统文件前都会执行的指令，以保证可以顺利读写系统文件。(点击编辑)"
             app:title="挂载指令" />
     </PreferenceCategory>
-    <PreferenceCategory
-        app:title="关于">
+    <PreferenceCategory app:title="关于">
+        <Preference app:title="版本" android:summary="@string/versionName"/>
+        <Preference app:title="作者" android:summary="黑字"/>
+        <Preference app:title="Github项目地址" android:summary="@string/project_repo">
+            <intent android:action="android.intent.action.VIEW" android:data="@string/project_repo"/>
+        </Preference>
     </PreferenceCategory>
 </PreferenceScreen>

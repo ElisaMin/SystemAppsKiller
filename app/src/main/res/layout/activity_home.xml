@@ -6,7 +6,7 @@
     <data>
         <variable
             name="vm"
-            type="me.heizi.box.package_manager.ui.home.HomeViewModel" />
+            type="me.heizi.box.package_manager.activities.home.HomeContainerViewModel" />
     </data>
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
@@ -44,19 +44,17 @@
         </com.google.android.material.appbar.AppBarLayout>
 
 
-
-
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/home_list"
-            app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:adapter="@{vm.adapter}"
+            android:scrollbarSize="4dp"
+            android:scrollbars="vertical"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior"
             tools:itemCount="17"
             tools:listitem="@layout/item_app_uninstall_with_title" />
-
-
 
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -3,6 +3,9 @@ package me.heizi.box.package_manager.utils
 import android.content.SharedPreferences
 import android.util.Log
 import androidx.core.content.edit
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.OnLifecycleEvent
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -13,19 +16,27 @@ import kotlin.reflect.KProperty
 /**
  * 一个方便快捷的轮子
  */
+
 open class PreferenceMapped (
     private val sp:SharedPreferences
-) {
+):LifecycleObserver {
     /** 使用HashMap存储 */
-    val hashMap = HashMap<String,Any?>()
+    private var _hashMap:HashMap<String,Any?>? = HashMap<String,Any?>()
+    val hashMap get() = _hashMap!!
     /** 监听改变事件 */
     private val onChange = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, _ ->
         hashMap.putAll(sharedPreferences.all)
     }
 
-    init {
+    @OnLifecycleEvent(Lifecycle.Event.ON_START)
+    fun onStart() {
         hashMap.putAll(sp.all)
         sp.registerOnSharedPreferenceChangeListener(onChange)
+    }
+    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+    fun onDestroy() {
+        sp.unregisterOnSharedPreferenceChangeListener(onChange)
+        _hashMap = null
     }
 
     fun<T:Any?> named(key: String) = Map<T>(key)
