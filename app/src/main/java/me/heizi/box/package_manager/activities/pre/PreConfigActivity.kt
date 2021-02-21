@@ -78,15 +78,16 @@ class PreConfigActivity :AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-//        if(parent.viewModel.preferences.mountString == null) {
-        setContentView(binding.root)
-        binding.vm = viewModel
-        binding.lifecycleOwner = this
-        if(false) {
+
+        if(app.preferenceMapper.mountString == null) {
+//        if(false) {
             launchOnFirstTime()
         } else {
             toHome()
         }
+        setContentView(binding.root)
+        binding.vm = viewModel
+        binding.lifecycleOwner = this
     }
 
     var collects = 0

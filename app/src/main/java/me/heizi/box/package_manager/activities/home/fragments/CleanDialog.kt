@@ -53,8 +53,6 @@ class CleanDialog : BottomSheetDialogFragment() {
     }
 
 
-
-
     /**
      * On done btn clicked
      *
@@ -64,19 +62,23 @@ class CleanDialog : BottomSheetDialogFragment() {
         if (viewModel.isUninstallable.value) callDialogGetBackupType {
             val list = viewModel.adapter.currentList
             val mountString = parent.viewModel.preferences.mountString ?: DEFAULT_MOUNT_STRING
-            val connect = object : ServiceConnection {
+            class C : ServiceConnection {
+                val context:Context = parent
                 override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
                     if (binder is CleaningAndroidService.Binder) lifecycleScope.launch(Main) {
                         //调用binder的函数
-                        binder.startUninstall(lifecycleScope,list,it,mountString)
-                        context?.shortToast("正在开始卸载一共${list.size}个应用")
+                        binder.startUninstall(list,it,mountString){
+                            context.applicationContext.unbindService(this@C)
+                        }
+                        context.shortToast("正在开始卸载一共${list.size}个应用")
                         dismiss()
                     } else throw IllegalArgumentException("binder非来自本应用")
                 }
                 override fun onServiceDisconnected(name: ComponentName?) {}
             }
-            CleaningAndroidService.intent(requireContext()).let {i->
-                context?.let {
+            val connect = C()
+            CleaningAndroidService.intent(requireContext().applicationContext).let {i->
+                context?.applicationContext?.let {
                     it.startService(i)
                     it.bindService(i,connect, Context.BIND_AUTO_CREATE)
                 }
@@ -89,7 +91,13 @@ class CleanDialog : BottomSheetDialogFragment() {
             onInputting(it)
         }
     }
-    private suspend fun ViewModel.onInputting(input:String) {
+
+    /**
+     * 在文本输入的时候超过六个触发机制检查是否可卸载 否则不可卸载(((
+     *
+     * @param input
+     */
+    private fun ViewModel.onInputting(input:String) {
         if (input.length <= 6) { showErrorMessage(null);return } else { startProgress() }
         try {
             val jsonContent = Compressor.buildJson(input)
@@ -105,12 +113,15 @@ class CleanDialog : BottomSheetDialogFragment() {
             stopProgress()
         }
     }
-    private suspend fun ViewModel.onUninstallInfoChanged(json:JsonContent?) {
-        lifecycleScope.launch(Main) {
-            Log.i(Application.TAG, "list: changed on cleaning")
-            adapter.submitList(json?.apps?.toMutableList())
-        }
 
+    /**
+     * 在uninstall info 改变时往adapter放东西
+     *
+     * @param json
+     */
+    private fun ViewModel.onUninstallInfoChanged(json:JsonContent?) = lifecycleScope.launch(Main) {
+        adapter.submitList(json?.apps?.toMutableList())
+        Log.i(Application.TAG, "list: changed on cleaning")
     }
 
     /**
@@ -131,35 +142,29 @@ class CleanDialog : BottomSheetDialogFragment() {
             }
         }.show()
     }
-
+    class ViewHolder(itemView:View): RecyclerView.ViewHolder(itemView){
+        var title by bindText(R.id.title_uninstall_info)
+        var message by bindText(R.id.message_uninstall_info)
+    }
     /**
      * Adapter
      *
      * 用于[R.layout.dialog_clean]的recycler view 的Adapter
      * 每个item主要展示应用名和删除按钮
      */
-    inner class Adapter: ListAdapter<UninstallInfo, Adapter.ViewHolder>(differ){
+    inner class Adapter: ListAdapter<UninstallInfo, ViewHolder>(differ){
 
         private var finalList: ArrayList<UninstallInfo> = ArrayList()
 
-        inner class ViewHolder(itemView:View): RecyclerView.ViewHolder(itemView){
-            var title by bindText(R.id.title_uninstall_info)
-            var message by bindText(R.id.message_uninstall_info)
-        }
-
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            Log.i(Application.TAG, "onCreateViewHolder: called")
             val view = LayoutInflater.from(parent.context).inflate(R.layout.item_uninstall_info_input,parent,false)
             return ViewHolder(view)
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            Log.i(Application.TAG, "onBindViewHolder: called $position")
             with(getItem(position)){ with(holder) {
-                message =
-                        """|$sourceDirectory
-                       |${dataDirectory?:"没有数据路径可删除"}""".trimMargin()
-                title = if (applicationName==packageName) applicationName else """${applicationName}:$packageName"""
+                title = applicationName
+                message = "$packageName\n$sourceDirectory"
                 holder.itemView.findViewById<FrameLayout>(R.id.delete_uninstall_info_btn).setOnClickListener { onRemoveBtnClicked(position) }
             } }
         }
@@ -170,7 +175,8 @@ class CleanDialog : BottomSheetDialogFragment() {
          * 当index为[position]的item被通知删除时把[finalList]的删除掉,并更新[finalList]
          */
         private fun onRemoveBtnClicked(position: Int) {
-            TODO("下次一定")
+            finalList.remove(currentList[position])
+            submitList(finalList)
         }
 
         /**
@@ -185,17 +191,6 @@ class CleanDialog : BottomSheetDialogFragment() {
             super.submitList(list)
         }
 
-        /**
-         * Remove item
-         *
-         * 通知item remove
-         */
-        private fun removeItem(position: Int) {
-            finalList.removeAt(position)
-            notifyItemRemoved(position)
-            submitList(finalList)
-            notifyItemRangeChanged(position-1,3)
-        }
     }
 
     inner class ViewModel{

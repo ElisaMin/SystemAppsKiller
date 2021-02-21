@@ -24,10 +24,12 @@ import me.heizi.box.package_manager.dao.entities.Version
 )
 abstract class DB: RoomDatabase() {
     companion object {
+//        inline fun migration(start:Int,end:Int,crossinline block: (SupportSQLiteDatabase) -> Unit) = object : Migration(1,2) { override fun migrate(database: SupportSQLiteDatabase) = block(database) }
         private var instance:DB? = null
         val INSTANCE get() = instance!!
         fun resign(context: Context){
-            instance =Room.databaseBuilder(context,DB::class.java,"uninstall_data").build()
+            instance =Room.databaseBuilder(context,DB::class.java,"uninstall_data")
+                .build()
         }
         fun <T> CoroutineScope.database(
             dispatcher: CoroutineDispatcher = IO

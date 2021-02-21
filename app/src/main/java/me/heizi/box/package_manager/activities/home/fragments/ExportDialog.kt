@@ -20,6 +20,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.collectLatest
 import me.heizi.box.package_manager.Application
+import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.R
 import me.heizi.box.package_manager.dao.DB
 import me.heizi.box.package_manager.dao.DB.Companion.databaseMapper
@@ -54,14 +55,19 @@ class ExportDialog : BottomSheetDialogFragment() {
     }
 
     private fun onNewVersionCalled(view: View)  { lifecycleScope.launch(IO) {
-        val count = withContext(IO) { DB.INSTANCE.getDefaultMapper().getUninstalledCount() }
+        Log.i(TAG, "onNewVersionCalled: called")
+        val count = withContext(IO) {
+            Log.i(TAG, "onNewVersionCalled: finding count")
+            DB.INSTANCE.getDefaultMapper().getUninstalledCount()
+        }
+        Log.i(TAG, "onNewVersionCalled: result $count ")
         launch(Dispatchers.Main) {
-            if (count <= 0) context?.shortToast("没有屑载过任何应用哦~")
+            if (count <= 0) requireContext().shortToast("没有屑载过任何应用哦~")
             else {
                 val editText = EditText(context)
-                context?.dialog(
+                requireContext().dialog(
                     DialogBtns.Positive("添加") { _, _ -> createNewVersion(editText.text.toString()) },
-                    show = false,
+                    show = true,
                     view = editText,
                     title = "请输入名称",
                 )

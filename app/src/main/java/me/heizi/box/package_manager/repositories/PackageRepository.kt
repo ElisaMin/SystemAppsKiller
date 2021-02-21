@@ -18,8 +18,8 @@ import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.activities.home.Adapter
 import me.heizi.box.package_manager.models.BackupType
 import me.heizi.box.package_manager.utils.PathFormatter.getPreviousPath
+import me.heizi.box.package_manager.utils.Uninstall.uninstall
 import me.heizi.box.package_manager.utils.longToast
-import me.heizi.box.package_manager.utils.uninstall
 import me.heizi.kotlinx.shell.CommandResult
 import java.util.*
 import kotlin.collections.set
@@ -88,7 +88,6 @@ class PackageRepository(
             val task = scope.uninstall(
                 backupType = backupType,
                 sDir = applicationInfo.sourceDir,
-                dDir = getDataPath(applicationInfo,backupType),
                 name = getApplicationLabel(applicationInfo),
                 packageName = applicationInfo.packageName,
                 mountString = getMountString()

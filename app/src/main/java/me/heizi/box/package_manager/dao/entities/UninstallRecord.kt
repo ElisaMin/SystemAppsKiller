@@ -13,12 +13,11 @@ data class UninstallRecord (
     val name:String,
     override val packageName:String,
     val source:String,
-    val data:String?,
+    val data:String? = null,
     @ColumnInfo(name = "is_backup")
     val isBackups: Boolean = false
 ): UninstallInfo {
     override val applicationName: String get() = name
     override val sourceDirectory: String get() = source
-    override val dataDirectory: String? get() = data
 }
 

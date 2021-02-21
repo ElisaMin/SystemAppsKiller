@@ -31,16 +31,8 @@ import kotlin.random.Random
 
 class HomeActivity : AppCompatActivity() {
 
-    companion object {
-        private const val TAG = "SingletonActivity"
-        val Fragment.parent get() = this.requireActivity() as HomeActivity
-        val Fragment.app get() = this.parent.application as Application
-    }
-
     val viewModel: HomeContainerViewModel by viewModels()
     private val binding by lazy { ActivityHomeBinding.inflate(layoutInflater) }
-
-    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
@@ -49,66 +41,39 @@ class HomeActivity : AppCompatActivity() {
         binding.lifecycleOwner = this
         setSupportActionBar(binding.toolbar)
         collectUninstallResult()
-        listeningBackBtn()
+        onBackPressedDispatcher.addCallback(this) { onBackBtn() }
     }
-
-
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.home,menu)
         val search = menu.findItem(R.id.search_menu_home)
-        search.actionView = getSearchView()
+        search.actionView = SearchView(this).also {
+            it.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+                override fun onQueryTextSubmit(query: String?): Boolean = false
+                override fun onQueryTextChange(newText: String?): Boolean { viewModel.adapter.filter.filter(newText);return true }
+            })
+        }
         return true
     }
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when(item.itemId) {
-            R.id.launch_settings_menu -> {
-                Intent(this,SettingsActivity::class.java).let(::startActivity)
-                true
-            }
-            R.id.launch_export_menu -> {
-                ExportDialog().show(supportFragmentManager,"export")
-                true
-            }
-            R.id.launch_input_menu -> {
-                CleanDialog().show(supportFragmentManager,"input")
-                true
-            }
-            R.id.launch_help_menu -> {
-                HelpDialog().show(supportFragmentManager,"help")
-                true
-            }
-            R.id.search_menu_home -> {true}
-            else -> false
+    override fun onOptionsItemSelected(item: MenuItem): Boolean = when(item.itemId) {
+        R.id.launch_settings_menu -> {
+            Intent(this,SettingsActivity::class.java).let(::startActivity)
+            true
         }
-    }
-
-
-
-
-    /**
-     * Get search view
-     *
-     * 获取可过滤的search view
-     */
-    private fun getSearchView (): SearchView {
-        val searchView = SearchView(this)
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                return false
-            }
-            override fun onQueryTextChange(newText: String?): Boolean {
-                viewModel.adapter.filter.filter(newText)
-                return true
-            }
-        })
-        return searchView
-    }
-    private fun listeningBackBtn() {
-        onBackPressedDispatcher.addCallback(this) {
-            onBackBtn()
+        R.id.launch_export_menu -> {
+            ExportDialog().show(supportFragmentManager,"export")
+            true
         }
+        R.id.launch_input_menu -> {
+            CleanDialog().show(supportFragmentManager,"input")
+            true
+        }
+        R.id.launch_help_menu -> {
+            HelpDialog().show(supportFragmentManager,"help")
+            true
+        }
+        R.id.search_menu_home -> {true}
+        else -> false
     }
-
     /**
      * Collect uninstall result
      *
@@ -143,12 +108,12 @@ class HomeActivity : AppCompatActivity() {
             }
         }
     }
+
     /**
      * 有三种状态
      * 空状态，点击一次，点击第二次
      */
     private var isExit:Boolean? = null
-
     /**
      * On back btn
      *
@@ -172,5 +137,11 @@ class HomeActivity : AppCompatActivity() {
                 isExit = null
             }
         }
+    }
+
+    companion object {
+        private const val TAG = "SingletonActivity"
+        val Fragment.parent get() = this.requireActivity() as HomeActivity
+        val Fragment.app get() = this.parent.application as Application
     }
 }

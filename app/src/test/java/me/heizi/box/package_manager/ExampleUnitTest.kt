@@ -1,12 +1,69 @@
 package me.heizi.box.package_manager
 
+import kotlinx.coroutines.Dispatchers.Default
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import org.junit.Test
+
 /**
  * Example local unit test, which will execute on the development machine (host).
  *
  * See [testing documentation](http://d.android.com/tools/testing).
  */
 
+class Coroutine {
+    @Test
+    fun join() {
+        val time = System.currentTimeMillis()
+        fun seeTime(string: String) { println("$string ${System.currentTimeMillis()-time}ms")}
+        seeTime("task before")
+        val task = GlobalScope.launch(IO) {
+            seeTime("task inside")
+            launch(Default) {
+                seeTime("sub job inside")
+                delay(4000)
+                seeTime("sub job done")
+            }.join()
+            seeTime("sub one launched")
+            delay(3000)
+            seeTime("task done")
+        }
+        while (task.isActive) Unit
+    }
+}
 
+//class Flows {
+//    @Test
+//    fun sharedFlowStop() {
+//        val sharedFlow = MutableSharedFlow<Int>()
+//        val time = System.currentTimeMillis()
+//        fun seeTime(string: String) { println("$string ${System.currentTimeMillis()-time}ms")}
+//        var runing = true
+//        seeTime("starting ")
+//        GlobalScope.launch(Default) {
+//            seeTime("inside another thread")
+//            launch(IO) {
+//                seeTime("starting emit ")
+//                repeat(100) {i->
+//                    seeTime("emit $i | ")
+//                    sharedFlow.emit(i)
+//                }
+//                cancel()
+//            }
+////            sharedFlow.shareIn(this,started = sharedFlow.).takeWhile{
+////                it<99
+////            }.collect {
+////                seeTime("collect $it | ")
+////            }
+//            runing = false
+//        }
+//        seeTime("thread launched waiting for thread die")
+//        while (runing) Unit
+//        seeTime("main thread done")
+//    }
+//}
 //class Sorted {
 //
 //    class Incomparable(

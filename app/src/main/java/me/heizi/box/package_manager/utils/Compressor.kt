@@ -101,7 +101,6 @@ object Compressor {
                         applicationName = app.getString(KEY_NAME),
                         packageName = app.getString(KEY_PACKAGE),
                         sourceDirectory = app.getString(KEY_SOURCE),
-                        dataDirectory = app.getString(KEY_DATA)
                     )
                 )
             }//一些别的数据
@@ -129,8 +128,7 @@ object Compressor {
             sb.append(KEY_ALL_APPS)
             sb.append(":[")
             for (r in version.apps) {
-                val dataPath = r.data?.let { "'$it'" } ?: "null"
-                sb.append("""{$KEY_NAME:'${r.name}',$KEY_PACKAGE:'${r.packageName}',$KEY_SOURCE:'${r.source}',$KEY_DATA:$dataPath}""")
+                sb.append("""{$KEY_NAME:'${r.name}',$KEY_PACKAGE:'${r.packageName}',$KEY_SOURCE:'${r.source}'}""")
             }
             //]
             sb.append("]")

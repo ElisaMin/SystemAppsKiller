@@ -1,5 +1,6 @@
 package me.heizi.box.package_manager.activities.home
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.graphics.drawable.Drawable
@@ -30,6 +31,7 @@ import java.util.*
  *
  * 如果它只储存ViewHolder那就实时渲染好
  */
+@SuppressLint("NotifyDataSetChanged")
 class Adapter constructor(
     /**
      * 协程的范围

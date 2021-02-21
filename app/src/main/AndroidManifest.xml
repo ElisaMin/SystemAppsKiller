@@ -23,11 +23,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.PackageManager">
 
-        <receiver
-            android:name=".broadcast.StopForegroundService"
-            android:enabled="true"
-            android:exported="false" />
-
         <service
             android:name=".repositories.CleaningAndroidService"
             android:enabled="true"
@@ -37,7 +32,7 @@
             android:name=".activities.home.HomeActivity"
             android:launchMode="singleInstance">
         </activity>
-
+        <activity android:name=".activities.ShowResult"/>
         <activity
             android:name=".activities.SettingsActivity"
             android:launchMode="singleInstance"/>
