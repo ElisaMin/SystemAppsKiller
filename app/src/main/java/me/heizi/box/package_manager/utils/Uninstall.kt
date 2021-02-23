@@ -6,6 +6,7 @@ import me.heizi.box.package_manager.dao.entities.UninstallRecord
 import me.heizi.box.package_manager.models.BackupType
 import me.heizi.box.package_manager.models.UninstallInfo
 import me.heizi.kotlinx.shell.CommandResult
+import me.heizi.kotlinx.shell.CommandResult.Companion.toResult
 import me.heizi.kotlinx.shell.su
 import kotlin.text.StringBuilder as CommandLine
 
@@ -140,7 +141,6 @@ object Uninstall {
      * @param packageName 用于记录
      * @param name 用于记录
      * @param sDir apk地址
-     * @param dDir data地址 当成功时会被删除
      * @param mountString 挂载指令
      */
     fun CoroutineScope.uninstall(
@@ -150,25 +150,28 @@ object Uninstall {
             sDir:String,
             mountString: String
     ) = async (Dispatchers.IO) {
-
-        //添加指令
-        val command = getStartCommand(mountString)
+        try {
+            //添加指令
+            val command =     getStartCommand(mountString)
                 .addUninstallCommand(backupType, sDir,packageName)
                 .toString()
-        //执行
-        val result = su(command)
+            //执行
+            val result = su(command)
 
-        val record = UninstallRecord (
+            val record = UninstallRecord (
                 name = name,
                 packageName = packageName,
                 source =  sDir,
                 isBackups = backupType !is BackupType.JustRemove
-        )
-        val r = result.await()
-        if (r is CommandResult.Success) {
-            updateDB { record.add() }
+            )
+            val r = result.await()
+            if (r is CommandResult.Success) {
+                updateDB { record.add() }
+            }
+            r
+        } catch (e:Exception) {
+            e.toResult()
         }
-        r
     }
 
     suspend fun uninstall(info: UninstallInfo, backupType: BackupType, mountString: String): Deferred<CommandResult> = coroutineScope {

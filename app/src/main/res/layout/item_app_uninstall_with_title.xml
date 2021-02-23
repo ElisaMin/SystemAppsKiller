@@ -6,7 +6,7 @@
     <data>
         <variable
             name="viewModel"
-            type="me.heizi.box.package_manager.activities.home.Adapter.ViewHolder.ViewModel" />
+            type="me.heizi.box.package_manager.activities.home.adapters.UninstallApplicationAdapter.ViewHolder.ViewModel" />
 
     </data>
 

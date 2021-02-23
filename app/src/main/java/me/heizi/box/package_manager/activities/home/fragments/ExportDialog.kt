@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.collectLatest
 import me.heizi.box.package_manager.Application
 import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.R
+import me.heizi.box.package_manager.activities.home.HomeActivity.Companion.parent
 import me.heizi.box.package_manager.dao.DB
 import me.heizi.box.package_manager.dao.DB.Companion.databaseMapper
 import me.heizi.box.package_manager.dao.DB.Companion.updateDB
@@ -102,7 +103,7 @@ class ExportDialog : BottomSheetDialogFragment() {
                 copy(this, )
             }
             editAction = {
-                edit()
+                edit(this)
             }
         } } }
 
@@ -111,9 +112,45 @@ class ExportDialog : BottomSheetDialogFragment() {
          *
          * @param version
          */
-        // FIXME: 2021/2/10 找到一个方法修改该版本
-        private fun edit(/**version: Version**/) {
-            context?.shortToast("未实现")
+        private fun edit(version: Version) = version.connected { v->
+            main {
+                VersionEditDialog(
+                        ArrayList(v.apps),
+                        defaultName = v.name,
+                        beforeItemRemove = {
+                            try {
+                                withContext(IO) {
+                                    DB.INSTANCE.MAPPER.findRecordByPackageName(it.packageName)?.let { r ->
+                                        DB.INSTANCE.MAPPER.findConnect(version = v.id, record = r.id!!)
+                                    }!!.let { updateDB { it.delete() } }
+                                    true
+                                }
+                            } catch (e: NullPointerException) {
+                                Log.i(TAG, "edit: null ", e)
+                                false
+                            } catch (e: Exception) {
+                                Log.i(TAG, "edit: ",e)
+                                false
+                            }
+                        }
+                ) { list,name ->
+                    v.apps - list .forEach {
+                        Log.i(TAG, "removed: $it")
+                    }
+                    if (name.isNotEmpty()) {
+                        if (name != version.name) updateDB {
+                            version.copy(name = name).update()
+                        }
+                        true
+                    }
+                    else {
+                        main {
+                            context?.longToast("名字为空")
+                        }
+                        false
+                    }
+                }.show(parent.supportFragmentManager,"edit")
+            }
         }
 
         private fun startProgressing() {
@@ -129,28 +166,26 @@ class ExportDialog : BottomSheetDialogFragment() {
          * 弹出Dialog给内容一个复制的机会 或者直接bang的一下直接复制
          * @param version
          */
-        private fun copy(version: Version,){
-            startProgressing()
-            lifecycleScope.updateDB {
-                val l = getDefaultMapper().findVersionUninstallList(version.id!!)
-                lifecycleScope.run {
-                    try {
-                        val v = VersionConnected(version.id, version.name, false, version.createTime, l)
-                        val s = async{ Compressor.generateV1(v) }
-                        //更新
-                        launch(Dispatchers.Main) { copyTextToClipboard(s.await()) }
-                    }catch (e:Exception) {
-                        Log.i(Application.TAG, "copy: failed",e)
-                        launch(Dispatchers.Main) {
-                            context?.longToast("失败：${e.message}")
-                        }
-                    }finally {
-                        stopProgressing()
-                    }
-                }
-            }
+        private fun copy(version: Version) = version.connected { v->
+            val s = async{ Compressor.generateV1(v) }
+            //更新
+            launch(Dispatchers.Main) { copyTextToClipboard(s.await()) }.join()
         }
 
+        fun Version.connected(block:suspend CoroutineScope.(VersionConnected)->Unit) = io {
+            startProgressing()
+            try {
+                val l = DB.INSTANCE.getDefaultMapper().findVersionUninstallList(id!!)
+                block(VersionConnected(id, name, false, createTime, l))
+            }catch (e:Exception) {
+                Log.i(TAG, "connect: failed",e)
+                launch(Dispatchers.Main) {
+                    context?.longToast("失败：${e.message}")
+                }
+            }finally {
+                stopProgressing()
+            }
+        }
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder = ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_title_content_view,parent,false))
     }
 

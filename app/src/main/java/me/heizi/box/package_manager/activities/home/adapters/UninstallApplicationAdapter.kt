@@ -1,4 +1,4 @@
-package me.heizi.box.package_manager.activities.home
+package me.heizi.box.package_manager.activities.home.adapters
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -19,10 +19,8 @@ import kotlinx.coroutines.launch
 import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.databinding.ItemAppUninstallWithTitleBinding
 import me.heizi.box.package_manager.repositories.PackageRepository.Companion.isUserApp
-import me.heizi.box.package_manager.utils.DialogBtns
+import me.heizi.box.package_manager.utils.*
 import me.heizi.box.package_manager.utils.PathFormatter.diffPreviousPathAreNotSame
-import me.heizi.box.package_manager.utils.dialog
-import me.heizi.box.package_manager.utils.longToast
 import java.util.*
 
 
@@ -32,15 +30,12 @@ import java.util.*
  * 如果它只储存ViewHolder那就实时渲染好
  */
 @SuppressLint("NotifyDataSetChanged")
-class Adapter constructor(
-    /**
-     * 协程的范围
-     */
+class UninstallApplicationAdapter constructor(
     private val scope: CoroutineScope,
-    private val service: Service,
-    private val processing:()->Unit,
-    private val stopProcessing:()->Unit
-) :RecyclerView.Adapter<Adapter.ViewHolder>(),Filterable {
+        private val service: Service,
+        private val processing:()->Unit,
+        private val stopProcessing:()->Unit
+) :RecyclerView.Adapter<UninstallApplicationAdapter.ViewHolder>(),Filterable {
 
     interface Service {
         val allAppF: StateFlow<MutableList<ApplicationInfo>>
@@ -107,7 +102,7 @@ class Adapter constructor(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder
         = ItemAppUninstallWithTitleBinding
             .inflate(LayoutInflater.from(parent.context),parent,false)
-            .let(Adapter::ViewHolder)
+            .let(UninstallApplicationAdapter::ViewHolder)
             .also { scope.launch { it.bind(viewType) } }
 
 
@@ -157,7 +152,23 @@ class Adapter constructor(
         if (isSystemApp) context.dialog (
             DialogBtns.Positive("卸载") { _, _->
                 processing()
-                service.uninstall(applicationInfo, position)
+                try {
+                    service.uninstall(applicationInfo, position)
+                } catch (e:Uninstall.NotNormallyPath) {
+                    context.dialog(title ="路径超出范围",message = e.message)
+                    stopProcessing()
+                } catch (e:Uninstall.NotSystemApp) {
+                    try {
+                        context.shortToast("非系统应用,请手动卸载")
+                        TODO("跳转到app详细页面未实现")
+                    }catch (e:Exception) {
+                        context.longToast(e.message?:e.toString())
+                    }
+                    stopProcessing()
+                }catch (e:Exception) {
+                    context.dialog(title = "未知错误",message = e.message)
+                    stopProcessing()
+                }
             },
             title = "是否需要卸载?",
             message = "卸载本应用可能会造成系统不稳定,确认要卸载吗?",

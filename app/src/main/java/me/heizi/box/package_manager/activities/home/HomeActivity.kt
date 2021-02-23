@@ -23,15 +23,13 @@ import me.heizi.box.package_manager.activities.home.fragments.ExportDialog
 import me.heizi.box.package_manager.activities.home.fragments.HelpDialog
 import me.heizi.box.package_manager.databinding.ActivityHomeBinding
 import me.heizi.box.package_manager.repositories.PackageRepository
-import me.heizi.box.package_manager.utils.clickSnackBar
-import me.heizi.box.package_manager.utils.dialog
-import me.heizi.box.package_manager.utils.longSnackBar
-import me.heizi.box.package_manager.utils.shortToast
+import me.heizi.box.package_manager.utils.*
 import kotlin.random.Random
 
 class HomeActivity : AppCompatActivity() {
 
     val viewModel: HomeContainerViewModel by viewModels()
+    private var launched = false
     private val binding by lazy { ActivityHomeBinding.inflate(layoutInflater) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,6 +40,12 @@ class HomeActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         collectUninstallResult()
         onBackPressedDispatcher.addCallback(this) { onBackBtn() }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!launched) launched = true
+        else viewModel.packageRepository.notifyDataChanged().let {  }
     }
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.home,menu)
@@ -71,6 +75,17 @@ class HomeActivity : AppCompatActivity() {
             HelpDialog().show(supportFragmentManager,"help")
             true
         }
+        R.id.launch_refresh_menu -> {
+            viewModel.startProgress()
+            viewModel.packageRepository.notifyDataChanged().let {
+                unconfined {
+                    val time = it.await()
+                    viewModel.stopProcess()
+                    main { shortToast("耗时${time}ms") }
+                }
+            }
+            true
+        }
         R.id.search_menu_home -> {true}
         else -> false
     }
@@ -88,11 +103,11 @@ class HomeActivity : AppCompatActivity() {
                         viewModel.adapter.removeAt(s.position)
                     }
                     is PackageRepository.UninstallStatues.Failed -> {
-                        Log.i(Application.TAG, "onViewCreated: ${s.result}")
+                        Log.i(Application.TAG, "onViewCreated: ${s}")
                         val message =
-                            """|卸载失败:${s.result.code}
-                               |原因:${s.result.errorMessage ?: "无"}
-                               |过程:${s.result.processingMessage} 
+                            """|卸载失败:${s.code}
+                               |原因:${s.errorMessage ?: "无"}
+                               |过程:${s.processingMessage} 
                             """.trimMargin()
                         binding.clickSnackBar(
                             message = message, "查看详细"

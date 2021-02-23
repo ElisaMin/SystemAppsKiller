@@ -22,7 +22,7 @@
                 android:scrollbarSize="5dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:adapter="@{viewModel.adapter}"
+                android:adapter="@{viewModel.editUninstallListAdapter}"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                 app:reverseLayout="true"
                 tools:itemCount="3"

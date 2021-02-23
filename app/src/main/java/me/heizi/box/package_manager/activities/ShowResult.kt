@@ -17,7 +17,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import me.heizi.box.package_manager.Application
 import me.heizi.box.package_manager.R
-import me.heizi.box.package_manager.activities.home.fragments.CleanDialog
+import me.heizi.box.package_manager.activities.home.adapters.EditUninstallListAdapter
 import me.heizi.box.package_manager.repositories.CleaningAndroidService
 import me.heizi.box.package_manager.utils.dialog
 import me.heizi.kotlinx.shell.CommandResult
@@ -52,10 +52,10 @@ class ShowResult : AppCompatActivity() {
                             gravity = Gravity.CENTER
                         })
                     }.let{object : RecyclerView.ViewHolder(it){} }
-                    else CleanDialog.ViewHolder(LayoutInflater.from(context).inflate(R.layout.item_uninstall_info_input,parent,false))
+                    else EditUninstallListAdapter.ViewHolder(LayoutInflater.from(context).inflate(R.layout.item_uninstall_info_input, parent, false))
                 override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
                     val realPosition = position-1
-                    if (position!=0 && holder is CleanDialog.ViewHolder) with(result[position-1]) {
+                    if (position!=0 && holder is EditUninstallListAdapter.ViewHolder) with(result[position-1]) {
                         holder.itemView.findViewById<View>(R.id.delete_uninstall_info_btn).isVisible = false
                         holder.title = "错误#$realPosition: $code"
                         holder.message = StringBuilder().apply {

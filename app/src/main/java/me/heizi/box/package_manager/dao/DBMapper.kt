@@ -39,6 +39,11 @@ interface DBMapper {
     @Query("select r.* from  recording r,connecting c where r.id = c.record_id and version_id =:versionId ")
     fun findVersionUninstallList(versionId:Int):List<UninstallRecord>
 
+    @Query("select * from recording where packageName = :packageName")
+    fun findRecordByPackageName(packageName:String):UninstallRecord?
+    @Query("select * from connecting where version_id =:version and record_id = :record")
+    fun findConnect(version:Int,record:Int):Connect?
+
     @Insert
     fun add(version: Version)
     @Insert

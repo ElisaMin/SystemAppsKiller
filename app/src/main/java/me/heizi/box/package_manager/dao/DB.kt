@@ -46,8 +46,7 @@ abstract class DB: RoomDatabase() {
         ) = launch(dispatcher) { block(INSTANCE) }
     }
     abstract fun getDefaultMapper():DBMapper
-
-
+    val MAPPER get() = getDefaultMapper()
     fun Connect.add() = getDefaultMapper().add(this)
     fun Version.add() = getDefaultMapper().add(this)
     fun UninstallRecord.add() = getDefaultMapper().add(this)

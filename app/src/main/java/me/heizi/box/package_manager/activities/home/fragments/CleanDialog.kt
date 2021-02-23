@@ -9,11 +9,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
-import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.Main
@@ -25,22 +21,16 @@ import me.heizi.box.package_manager.Application
 import me.heizi.box.package_manager.Application.Companion.DEFAULT_MOUNT_STRING
 import me.heizi.box.package_manager.R
 import me.heizi.box.package_manager.activities.home.HomeActivity.Companion.parent
+import me.heizi.box.package_manager.activities.home.adapters.EditUninstallListAdapter
 import me.heizi.box.package_manager.databinding.DialogCleanBinding
 import me.heizi.box.package_manager.models.BackupType
 import me.heizi.box.package_manager.models.JsonContent
-import me.heizi.box.package_manager.models.UninstallInfo
 import me.heizi.box.package_manager.repositories.CleaningAndroidService
 import me.heizi.box.package_manager.utils.*
 import java.util.*
 
 class CleanDialog : BottomSheetDialogFragment() {
     private val binding by lazy { DialogCleanBinding.bind(requireView()) }
-     private val differ = object : DiffUtil.ItemCallback<UninstallInfo>(){
-        override fun areItemsTheSame(oldItem: UninstallInfo, newItem: UninstallInfo): Boolean =
-            oldItem.packageName == newItem.packageName
-        override fun areContentsTheSame(oldItem: UninstallInfo, newItem: UninstallInfo): Boolean =
-            oldItem.equals(newItem)
-    }
 
     val viewModel = ViewModel()
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? { return layoutInflater.inflate(R.layout.dialog_clean,container) }
@@ -60,7 +50,7 @@ class CleanDialog : BottomSheetDialogFragment() {
      */
     private fun onDoneBtnClicked() {
         if (viewModel.isUninstallable.value) callDialogGetBackupType {
-            val list = viewModel.adapter.currentList
+            val list = viewModel.editUninstallListAdapter.currentList
             val mountString = parent.viewModel.preferences.mountString ?: DEFAULT_MOUNT_STRING
             class C : ServiceConnection {
                 val context:Context = parent
@@ -120,7 +110,7 @@ class CleanDialog : BottomSheetDialogFragment() {
      * @param json
      */
     private fun ViewModel.onUninstallInfoChanged(json:JsonContent?) = lifecycleScope.launch(Main) {
-        adapter.submitList(json?.apps?.toMutableList())
+        editUninstallListAdapter.submitList(json?.apps?.toMutableList())
         Log.i(Application.TAG, "list: changed on cleaning")
     }
 
@@ -142,59 +132,9 @@ class CleanDialog : BottomSheetDialogFragment() {
             }
         }.show()
     }
-    class ViewHolder(itemView:View): RecyclerView.ViewHolder(itemView){
-        var title by bindText(R.id.title_uninstall_info)
-        var message by bindText(R.id.message_uninstall_info)
-    }
-    /**
-     * Adapter
-     *
-     * 用于[R.layout.dialog_clean]的recycler view 的Adapter
-     * 每个item主要展示应用名和删除按钮
-     */
-    inner class Adapter: ListAdapter<UninstallInfo, ViewHolder>(differ){
-
-        private var finalList: ArrayList<UninstallInfo> = ArrayList()
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            val view = LayoutInflater.from(parent.context).inflate(R.layout.item_uninstall_info_input,parent,false)
-            return ViewHolder(view)
-        }
-
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            with(getItem(position)){ with(holder) {
-                title = applicationName
-                message = "$packageName\n$sourceDirectory"
-                holder.itemView.findViewById<FrameLayout>(R.id.delete_uninstall_info_btn).setOnClickListener { onRemoveBtnClicked(position) }
-            } }
-        }
-
-        /**
-         * On remove btn clicked
-         *
-         * 当index为[position]的item被通知删除时把[finalList]的删除掉,并更新[finalList]
-         */
-        private fun onRemoveBtnClicked(position: Int) {
-            finalList.remove(currentList[position])
-            submitList(finalList)
-        }
-
-        /**
-         * Submit list
-         *
-         * 把[list]扔到[finalList]
-         */
-        override fun submitList(list: MutableList<UninstallInfo>?) {
-            val arrayList = ArrayList<UninstallInfo>()
-            list?.let { arrayList.addAll(it) }
-            finalList = arrayList
-            super.submitList(list)
-        }
-
-    }
 
     inner class ViewModel{
-        val adapter: Adapter by lazy { Adapter() }
+        val editUninstallListAdapter: EditUninstallListAdapter by lazy { EditUninstallListAdapter() }
         val textInput: MutableStateFlow<String> = MutableStateFlow("")
         val helpText get() = _helpText.asStateFlow()
         val isUninstallable get() = _isUninstallable.asStateFlow()

@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import me.heizi.box.package_manager.Application.Companion.TAG
-import me.heizi.box.package_manager.activities.home.Adapter
+import me.heizi.box.package_manager.activities.home.adapters.UninstallApplicationAdapter
 import me.heizi.box.package_manager.models.BackupType
 import me.heizi.box.package_manager.utils.PathFormatter.getPreviousPath
 import me.heizi.box.package_manager.utils.Uninstall.uninstall
@@ -64,7 +64,7 @@ class PackageRepository(
             }
         }
         scope.launch(IO) {
-            val time = systemApps.sort().await()
+            val time = notifyDataChanged().await()
             val all = _systemAppsFlow.value.size
             val score = (((time*2).toFloat()/all)*100).roundToInt()
             launch(Main) {
@@ -74,7 +74,7 @@ class PackageRepository(
     }
 
 
-    val defaultAdapterService = object: Adapter.Service {
+    val defaultAdapterService = object: UninstallApplicationAdapter.Service {
         override val allAppF: StateFlow<MutableList<ApplicationInfo>>
             get() = _systemAppsFlow
         override fun getAppLabel(applicationInfo: ApplicationInfo): String
@@ -85,20 +85,27 @@ class PackageRepository(
             = _prevPathIndexed.getOrDefault(applicationInfo.packageName,"分组错误")
         override fun uninstall(applicationInfo: ApplicationInfo, position: Int) {
             val backupType = getBackupType()
-            val task = scope.uninstall(
-                backupType = backupType,
-                sDir = applicationInfo.sourceDir,
-                name = getApplicationLabel(applicationInfo),
-                packageName = applicationInfo.packageName,
-                mountString = getMountString()
-            )
-            scope.launch(IO) {
-                when (val r = task.await()) {
-                    is CommandResult.Success -> UninstallStatues.Success(position)
-                    is CommandResult.Failed -> UninstallStatues.Failed(r)
-                }.let {
-                    _uninstallStatues.emit(it)
+            try {
+                val task = scope.uninstall(
+                    backupType = backupType,
+                    sDir = applicationInfo.sourceDir,
+                    name = getApplicationLabel(applicationInfo),
+                    packageName = applicationInfo.packageName,
+                    mountString = getMountString()
+                )
+                task.invokeOnCompletion { e->
+                    e?.let { scope.launch { _uninstallStatues.emit(UninstallStatues.Failed("错误:${e.javaClass.simpleName}",e.message,-1)) } }
                 }
+                scope.launch(IO) {
+                    when (val r = task.await()) {
+                        is CommandResult.Success -> UninstallStatues.Success(position)
+                        is CommandResult.Failed -> UninstallStatues.Failed(processingMessage = r.processingMessage,errorMessage = r.errorMessage,r.code)
+                    }.let {
+                        _uninstallStatues.emit(it)
+                    }
+                }
+            }catch (e:Exception) {
+                scope.launch { _uninstallStatues.emit(UninstallStatues.Failed("错误:${e.javaClass.simpleName}",e.message,-1)) }
             }
         }
     }
@@ -108,15 +115,7 @@ class PackageRepository(
     @SuppressLint("SdCardPath")
     fun getDataPath(applicationInfo: ApplicationInfo,backupType: BackupType):String? =
         applicationInfo.dataDir.takeIf { backupType==BackupType.JustRemove || it!="/data/user_de/0/"||it!="/data/user/0/" }
-
-
-    /**
-     * 一个常见的状态SealedClass
-     */
-    sealed class UninstallStatues {
-        class Success(val position:Int) : UninstallStatues()
-        class Failed(val result: CommandResult.Failed) : UninstallStatues()
-    }
+    fun notifyDataChanged():Deferred<Long> = systemApps.sort()
 
 
 
@@ -144,25 +143,21 @@ class PackageRepository(
             _prevPathIndexed[it.packageName] = k
             group[k]?.add(it) ?: kotlin.run{ group[k] = arrayListOf(it) }
         }//耗时操作
-        val waiting = Array(group.size){false}
-        val sortTask = async(IO) {
-            var i = 0
+        val sortJob = launch(IO) {
             //排序子组
             group.forEach {
                 launch(Default) {
-                    val j = i++
                     it.value.sortBy { it.sourceDir }
                     group[it.key] = it.value
-                    waiting[j] = true
                     Log.i(TAG, "sort: ${ System.currentTimeMillis() - time }")
                 }
             }
-            if (waiting.contains(false)) delay(1)
         }
         launch(Main){ Log.i(TAG, "sort: ${group.keys.joinToString(",")}") }
         val result = LinkedList<ApplicationInfo>()
         //等待子组排序完毕
-        sortTask.await()
+        sortJob.join()
+        while (sortJob.isActive) Unit
         //排序父组
         group.entries.sortedBy { it.key }.forEach {
             result.addAll(it.value)
@@ -173,6 +168,15 @@ class PackageRepository(
         _systemAppsFlow.emit(result)
         System.gc()
         dealTime
+    }
+
+
+    /**
+     * 一个常见的状态SealedClass
+     */
+    sealed class UninstallStatues {
+        class Success(val position:Int) : UninstallStatues()
+        class Failed(val processingMessage:String,val errorMessage:String?,val code:Int) : UninstallStatues()
     }
     companion object {
         val ApplicationInfo.isUserApp

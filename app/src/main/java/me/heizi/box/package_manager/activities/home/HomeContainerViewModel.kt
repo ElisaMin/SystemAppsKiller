@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import me.heizi.box.package_manager.Application.Companion.DEFAULT_MOUNT_STRING
 import me.heizi.box.package_manager.Application.Companion.app
+import me.heizi.box.package_manager.activities.home.adapters.UninstallApplicationAdapter
 import me.heizi.box.package_manager.models.BackupType
 import me.heizi.box.package_manager.repositories.PackageRepository
 import me.heizi.box.package_manager.utils.set
@@ -29,7 +30,7 @@ class HomeContainerViewModel(application: Application) : AndroidViewModel(applic
             },
     )
     val adapter by lazy {
-        Adapter(
+        UninstallApplicationAdapter(
             viewModelScope,
             packageRepository.defaultAdapterService,
             stopProcessing = {_processing set  false},
@@ -45,6 +46,9 @@ class HomeContainerViewModel(application: Application) : AndroidViewModel(applic
     }
     fun stopProcess() {
         _processing set false
+    }
+    fun startProgress() {
+        _processing set true
     }
 
 }
