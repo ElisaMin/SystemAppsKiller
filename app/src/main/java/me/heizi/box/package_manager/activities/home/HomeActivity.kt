@@ -21,6 +21,7 @@ import me.heizi.box.package_manager.activities.SettingsActivity
 import me.heizi.box.package_manager.activities.home.fragments.CleanDialog
 import me.heizi.box.package_manager.activities.home.fragments.ExportDialog
 import me.heizi.box.package_manager.activities.home.fragments.HelpDialog
+import me.heizi.box.package_manager.dao.DB
 import me.heizi.box.package_manager.databinding.ActivityHomeBinding
 import me.heizi.box.package_manager.repositories.PackageRepository
 import me.heizi.box.package_manager.utils.*
@@ -29,23 +30,29 @@ import kotlin.random.Random
 class HomeActivity : AppCompatActivity() {
 
     val viewModel: HomeContainerViewModel by viewModels()
-    private var launched = false
     private val binding by lazy { ActivityHomeBinding.inflate(layoutInflater) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(binding.root)
+        binding
+        onBackPressedDispatcher.addCallback(this) { onBackBtn() }
+        lifecycle.addObserver(DB)
+        lifecycle.addObserver(viewModel.packageRepository)
         Log.i(TAG, "onCreate: called")
-        binding.vm = viewModel
-        binding.lifecycleOwner = this
         setSupportActionBar(binding.toolbar)
         collectUninstallResult()
-        onBackPressedDispatcher.addCallback(this) { onBackBtn() }
+        viewModel.startProgress()
+        setContentView(binding.root)
+    }
+    override fun onStart() {
+        viewModel.startProgress()
+        super.onStart()
+        binding.vm = viewModel
+        binding.lifecycleOwner = this
     }
 
     override fun onResume() {
         super.onResume()
-        if (!launched) launched = true
-        else viewModel.packageRepository.notifyDataChanged().let {  }
+        viewModel.stopProcess()
     }
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.home,menu)

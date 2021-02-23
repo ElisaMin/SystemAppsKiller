@@ -1,11 +1,13 @@
 package me.heizi.box.package_manager.repositories
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.util.Log
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.OnLifecycleEvent
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.Default
 import kotlinx.coroutines.Dispatchers.IO
@@ -36,8 +38,9 @@ class PackageRepository(
     context: Context,
     getBackupType: ()->BackupType,
     getMountString:()-> String
-) {
+):LifecycleObserver {
 
+    private val context: Context = context.applicationContext
     /**
      * 卸载状态
      */
@@ -45,7 +48,7 @@ class PackageRepository(
 
     private val systemApps get()  = pm.getInstalledApplications(PackageManager.MATCH_SYSTEM_ONLY)
     private val pm:PackageManager = context.packageManager
-    private val _systemAppsFlow: MutableStateFlow<MutableList<ApplicationInfo>> by lazy { MutableStateFlow(mutableListOf()) }
+    private val _systemAppsFlow: MutableStateFlow<MutableList<ApplicationInfo>> = MutableStateFlow(systemApps.subList(0,10))
     private val _uninstallStatues = MutableSharedFlow<UninstallStatues>()
     /**
      * Key:PackageName Value:PrevPath
@@ -56,14 +59,20 @@ class PackageRepository(
      */
     private val _labels = HashMap<String,String>()
 
-    init {
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_CREATE)
+    fun onCreate() {
+
         //获取package label
         scope.launch(Default) {
             _systemAppsFlow.value.forEach {
                 _labels[it.packageName] =  pm.getApplicationLabel(it).toString()
             }
         }
-        scope.launch(IO) {
+    }
+    @OnLifecycleEvent(Lifecycle.Event.ON_START)
+    fun onStart() {
+        if (firstTime) scope.launch(IO) {
             val time = notifyDataChanged().await()
             val all = _systemAppsFlow.value.size
             val score = (((time*2).toFloat()/all)*100).roundToInt()
@@ -72,6 +81,20 @@ class PackageRepository(
             }
         }
     }
+    private var firstTime = true
+    @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
+    fun onResume() {
+        if (firstTime) firstTime = false
+        else notifyDataChanged().let {  }
+    }
+    @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
+    fun onStop() {
+        scope.launch(Default) {
+            _systemAppsFlow.emit(arrayListOf())
+        }
+    }
+
+    fun notifyDataChanged():Deferred<Long> = systemApps.sort()
 
 
     val defaultAdapterService = object: UninstallApplicationAdapter.Service {
@@ -109,14 +132,7 @@ class PackageRepository(
             }
         }
     }
-
     private fun getApplicationLabel(applicationInfo: ApplicationInfo) = _labels[applicationInfo.packageName] ?: pm.getApplicationLabel(applicationInfo).toString()
-
-    @SuppressLint("SdCardPath")
-    fun getDataPath(applicationInfo: ApplicationInfo,backupType: BackupType):String? =
-        applicationInfo.dataDir.takeIf { backupType==BackupType.JustRemove || it!="/data/user_de/0/"||it!="/data/user/0/" }
-    fun notifyDataChanged():Deferred<Long> = systemApps.sort()
-
 
 
     /**

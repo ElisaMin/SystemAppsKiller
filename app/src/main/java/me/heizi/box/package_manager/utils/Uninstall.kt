@@ -1,7 +1,8 @@
 package me.heizi.box.package_manager.utils
 
 import kotlinx.coroutines.*
-import me.heizi.box.package_manager.dao.DB.Companion.updateDB
+import kotlinx.coroutines.Dispatchers.IO
+import me.heizi.box.package_manager.dao.DB
 import me.heizi.box.package_manager.dao.entities.UninstallRecord
 import me.heizi.box.package_manager.models.BackupType
 import me.heizi.box.package_manager.models.UninstallInfo
@@ -165,9 +166,7 @@ object Uninstall {
                 isBackups = backupType !is BackupType.JustRemove
             )
             val r = result.await()
-            if (r is CommandResult.Success) {
-                updateDB { record.add() }
-            }
+            if (r is CommandResult.Success) launch(IO){ DB +record }
             r
         } catch (e:Exception) {
             e.toResult()
