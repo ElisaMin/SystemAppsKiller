@@ -3,6 +3,7 @@ package me.heizi.box.package_manager.activities.home.fragments
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import androidx.core.view.isVisible
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import me.heizi.box.package_manager.Application.Companion.TAG
@@ -17,6 +18,7 @@ import me.heizi.box.package_manager.utils.main
 class VersionEditDialog(
     private val sourceList: ArrayList<UninstallInfo>,
     private val defaultName:String,
+    private val isShowingBtn:Boolean =true,
     private val beforeItemRemove:suspend CoroutineScope.(UninstallInfo)->Boolean,
     private val onDone:(final:List<UninstallInfo>,String)->Boolean,
 ): BottomSheetDialogFragment<DialogListEditBinding>()  {
@@ -29,7 +31,7 @@ class VersionEditDialog(
         binding.viewModel = viewModel
         binding.lifecycleOwner = parent
         binding.btnSssssssssss.setOnClickListener { viewModel.onDoneClicked() }
-
+        binding.btnSssssssssss.isVisible = isShowingBtn
     }
     inner class ViewModel {
         val adapter by lazy {
