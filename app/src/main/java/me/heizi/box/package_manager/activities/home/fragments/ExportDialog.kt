@@ -10,6 +10,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ProgressBar
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -27,6 +28,8 @@ import me.heizi.box.package_manager.dao.entities.Version
 import me.heizi.box.package_manager.databinding.DialogExportBinding
 import me.heizi.box.package_manager.models.VersionConnected
 import me.heizi.box.package_manager.utils.*
+import me.heizi.box.package_manager.utils.Compressor.toQrCode
+import me.heizi.box.package_manager.utils.Compressor.toShareableText
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
@@ -102,23 +105,45 @@ class ExportDialog : BottomSheetDialogFragment<DialogExportBinding>() {
         }
     }
 
+    companion object {
+        private const val EDIT = "编辑"
+        private const val COPY = "复制文本"
+    }
     private inner class Adapter: ListAdapter<Version, Adapter.ViewHolder>(differ) {
         private val timeFormat by lazy { SimpleDateFormat("MM/dd/hh:mm ", Locale.CHINA) }
         inner class ViewHolder(itemView:View): RecyclerView.ViewHolder(itemView) {
             var title by bindText(R.id.title_content_view)
             var time by bindText(R.id.text_content_view)
-            var copyAction by bindClick(R.id.btn_copy)
-            var editAction by bindClick(R.id.btn_edit)
         }
-
         override fun onBindViewHolder(holder: ViewHolder, position: Int) { with(holder) { with(getItem(position)) {
             time = timeFormat.format(Date(createTime.toLong()))
             title = name
-            copyAction = {
-                copy(this, )
-            }
-            editAction = {
-                edit(this)
+            holder.itemView.setOnClickListener {
+                startProgressing()
+                val version = this
+                connected {
+                    val count = it.apps.size
+                    var help:String? = null
+                    val bitmap = it
+                        .runCatching { toQrCode() }
+                        .onFailure { e -> help = e.message }
+                        .onSuccess { bitmap ->
+                            if (bitmap == null) help = "数据太大 无法转换成二维码，期待往下的更新。"
+                        }.getOrNull()
+                    main {
+                        ShowVersionInfoDialog(
+                            ShowVersionInfoDialog.ViewModel(
+                                EDIT to {edit(version)},
+                                COPY to {copy(version)},
+                                bitmap = bitmap,
+                                version = version,
+                                listSize = count,
+                                helpText = help
+                            )
+                        ).show(parent.supportFragmentManager,"show_version_info")
+                        stopProgressing()
+                    }
+                }
             }
         } } }
 
@@ -146,33 +171,38 @@ class ExportDialog : BottomSheetDialogFragment<DialogExportBinding>() {
                                 false
                             }
                         }
-                ) { _,name ->
+                ) b@{ _,name ->
                     try {
-                        if (name.isNotEmpty())  {
-                            if (name != version.name) io {
-                                db UPDATE  version.copy(name = name)
+                        if (name.isNotEmpty()&&name!=version.name)  //如果不是空的和不一样就:检查是否有重名
+                            if(db.versions.any { it.id != version.id && it.name == version.name }) {
+                                main { context?.shortToast("名字不可重复") }
+                                false
+                            } else {
+                                io { db.UPDATE(version.copy(name = name)) }
+                                main { context?.shortToast("名字更新成功") }
+                                true
                             }
-                            true
-                        } else {
+                        else {
                             main {
                                 context?.longToast("名字为空")
                             }
                             false
                         }
-
                     } catch (e: Exception) {
                         Log.i(TAG, "edit: ",e)
                         false
                     }
                 }.show(parent.supportFragmentManager,"edit")
+                dismiss()
             }
         }
 
-        private fun startProgressing() {
-            //未实现
+        private val awaitDialog by lazy { context!!.dialog(view = ProgressBar(context),cancelable = false,show = false) }
+        private fun startProgressing() = main {
+            awaitDialog.show()
         }
-        private fun stopProgressing() {
-            //未实现
+        private fun stopProgressing() = main {
+            awaitDialog.dismiss()
         }
 
         /**
@@ -181,18 +211,14 @@ class ExportDialog : BottomSheetDialogFragment<DialogExportBinding>() {
          * 弹出Dialog给内容一个复制的机会 或者直接bang的一下直接复制
          * @param version
          */
-        private fun copy(version: Version) = version.connected { v->
-            val s = async{ Compressor.generateV1(v) }
-            //更新
-            launch(Dispatchers.Main) { copyTextToClipboard(s.await()) }.join()
-        }
+        private fun copy(version: Version) = version.connected { v-> default { v.toShareableText().let(::share) } }
 
         private fun notifyEmptyList() {
 
         }
 
         fun Version.connected(block:suspend CoroutineScope.(VersionConnected)->Unit) = io {
-            val versionId= this@connected.id
+            val versionId = this@connected.id
             fun <T> checkEmpty(list: List<T>) {if (list.isEmpty()) throw NullPointerException("该版本不存在数据库!!!")}
             startProgressing()
             try {
@@ -217,8 +243,13 @@ class ExportDialog : BottomSheetDialogFragment<DialogExportBinding>() {
     }
 
 
+    /**
+     * 分享文字
+     *
+     * @param text
+     */
     @SuppressLint("UseRequireInsteadOfGet")
-    private fun copyTextToClipboard(text:String) {
+    private fun share(text:String) = main {
         (context!!.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
             .setPrimaryClip(ClipData.newPlainText("${Application.PACKAGE_NAME}.copyText",text))
         context!!.shortToast("复制成功")

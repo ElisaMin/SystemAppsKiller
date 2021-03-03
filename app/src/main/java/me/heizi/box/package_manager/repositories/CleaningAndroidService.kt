@@ -42,7 +42,7 @@ class CleaningAndroidService : LifecycleService() {
         //build channel
         NotificationChannel(PROCESS_NOTIFY_CHANNEL_ID,"正在卸载",NotificationManager.IMPORTANCE_MIN).let(notificationManager::createNotificationChannel)
         NotificationChannel(FAILED_NOTIFY_CHANNEL_ID,"卸载失败",NotificationManager.IMPORTANCE_DEFAULT).let(notificationManager::createNotificationChannel)
-        NotificationChannel(DONE_NOTIFY_CHANNEL_ID,"卸载通知",NotificationManager.IMPORTANCE_MAX).let(notificationManager::createNotificationChannel)
+        NotificationChannel(DONE_NOTIFY_CHANNEL_ID,"卸载通知",NotificationManager.IMPORTANCE_HIGH).let(notificationManager::createNotificationChannel)
         //start foreground
         startForeground(PROCESS_NOTIFY_ID,notifier.processNotification.build())
     }

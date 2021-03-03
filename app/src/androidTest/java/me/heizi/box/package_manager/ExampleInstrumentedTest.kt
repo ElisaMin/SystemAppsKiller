@@ -3,7 +3,15 @@ package me.heizi.box.package_manager
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import me.heizi.box.package_manager.dao.entities.UninstallRecord
+import me.heizi.box.package_manager.models.VersionConnected
+import me.heizi.box.package_manager.utils.Compressor
+import me.heizi.box.package_manager.utils.Compressor.toQrCode
+import me.heizi.box.package_manager.utils.Compressor.toShareableText
+import me.heizi.box.package_manager.utils.CompressorVersion
+import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.*
 
 /**
  * Instrumented test, which will execute on an Android device.
@@ -57,27 +65,109 @@ class ExampleInstrumentedTest {
 //        }
 //    }
 
+    private val apps get() = LinkedList<UninstallRecord>().apply {
+        appContext.packageManager.getInstalledPackages(0).forEachIndexed { index, packageInfo ->
+            if (index<60) add(UninstallRecord(id = index,name = appContext.packageManager.getApplicationLabel(packageInfo.applicationInfo).toString(),packageName = packageInfo.packageName,source = packageInfo.applicationInfo.sourceDir,isBackups = false))
+        }
+    }
+    private val connected get() = VersionConnected(
+        name = "123",
+        apps = apps,
+        createTime = System.currentTimeMillis().toInt(),
+    )
+
+//    companion object {
+//        @JvmStatic
+//        fun main(args: Array<String>) {
+//            println((1).toByte())
+//        }
+//    }
+    @Test
+    fun qc_code() {
+        println("start")
+        val connected = connected
+        println(connected.apps.size)
+        CompressorVersion.V1.encodeForImage(connected).size.let(::println)
+        println("connected")
+        connected.toQrCode()!!.let {
+            println("not null")
+            Compressor.read(it)
+        }.let {
+            var listIsSame = apps.size == connected.apps.size
+            if (listIsSame) for ( i in 0 until apps.size) {
+                listIsSame = apps[i].packageName==connected.apps[i].packageName
+                if(!listIsSame) break
+            }
+            listIsSame
+        }.let(::println)
+    }
+    @Test
+    fun compressorNew() {
+        VersionConnected(
+            name = "123",
+            apps = apps,
+            createTime = System.currentTimeMillis().toInt(),
+        ).also {
+            it.toQrCode()
+        }.toShareableText()
+            .let { println(it) }
+    }
 //    @Test
 //    fun compressor() {
+//        val split = arrayOf("/"," ","-",".","_")
 //        val apps = LinkedList<UninstallRecord>()
-//        repeat(50) {
-//            UninstallRecord(name = "name$it",packageName = "me.heizi.p$it",source = "/path/$it",data = null,id= it)
-//                .let(apps::add)
+//        appContext.packageManager.getInstalledPackages(0).forEachIndexed { index, packageInfo ->
+//            apps.add(UninstallRecord(id = index,name = appContext.packageManager.getApplicationLabel(packageInfo.applicationInfo).toString(),packageName = packageInfo.packageName,source = packageInfo.applicationInfo.sourceDir,isBackups = false))
 //        }
-//        val job = GlobalScope.launch {
-//            Compressor.generateV1(VersionConnected(
-//                name = "123",
-//                apps = apps,
-//                createTime = System.currentTimeMillis().toInt(),
-//            )).let {
-//                Log.i(TAG, "compressor: $it")
-//                val json = Compressor.buildJson(it)
-//                Log.i(TAG, "compressor: $json")
+//        val time = System.currentTimeMillis()
+//        var times = 0
+//        val splited = HashMap<String,Int>()
+//        fun check(list:List<String>) {
+//            list.forEach {
+//                splited[it] = splited[it]?.plus(1) ?:1
+//                times++
 //            }
 //        }
-//        while (job.isActive) {
-//            Thread.sleep(10)
+//        fun split(string: String) {
+//            check(string.split(*split,ignoreCase = true))
 //        }
+//        apps.forEach {
+//            it.source.let(::split)
+//            it.packageName.let(::split)
+//            it.applicationName.let(::split)
+//        }
+//        val byteLenght = (splited.size/256)+1
+//        val byteArray = ByteArrayOutputStream()
+//
+//        splited.forEach { t, u -> println("word:$t,times:$u") }
+//
+////        val sb = StringBuilder()
+////        sb.append("{v:2,d:'")
+////        sb.append("'}")
+////        val result = sb.toString().replace("}{","},{")
+////        println(System.currentTimeMillis() - time)
+//        println(times)
+////        runBlocking {
+////            Compressor.generateV1(VersionConnected(
+////                name = "123",
+////                apps = apps,
+////                createTime = System.currentTimeMillis().toInt(),
+////            )).let {
+////                File(appContext.cacheDir,"uninstall-${System.currentTimeMillis().toString().takeLast(6)}.json").let {
+////                    it.bufferedWriter()
+////                }.let { b->
+////                    b.append(it)
+////                    b.flush()
+////                    b.close()
+////                }
+////
+////                println(it.length)
+////                for (i in it.split("/")) println(i)
+//////                Log.i(TAG, "compressor: $it")
+//////                val json = Compressor.buildJson(it)
+//////                Log.i(TAG, "compressor: $json")
+////            }
+////        }
 //    }
 
 //    @Test

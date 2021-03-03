@@ -27,7 +27,31 @@
                 app:reverseLayout="true"
                 tools:itemCount="3"
                 tools:listitem="@layout/item_uninstall_info_input" />
-
+            <androidx.cardview.widget.CardView
+                android:visibility="@{viewModel.isUninstallable}"
+                app:cardElevation="1dp"
+                app:cardCornerRadius="6dp"
+                android:layout_margin="8dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <TableLayout
+                    android:layout_margin="8dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <TableRow >
+                        <TextView android:text="卸载列表名称:" android:layout_margin="8dp"/>
+                        <TextView android:text="@{viewModel.versionName }" tools:text="LG G7自用" android:layout_margin="8dp"/>
+                    </TableRow>
+<!--                    <TableRow >-->
+<!--                        <TextView android:text="生成时间:" android:layout_margin="8dp"/>-->
+<!--                        <TextView android:text="@{viewModel.createTime }" tools:text="LG G7自用" android:layout_margin="8dp"/>-->
+<!--                    </TableRow>-->
+                    <TableRow >
+                        <TextView android:text="卸载应用总:" android:layout_margin="8dp"/>
+                        <TextView android:text="@{ viewModel.listCount }" tools:text="0" android:layout_margin="8dp"/>
+                    </TableRow>
+                </TableLayout>
+            </androidx.cardview.widget.CardView>
             <ProgressBar
                 android:visibility="@{viewModel.progressing}"
                 android:id="@+id/progressBar2"
@@ -43,6 +67,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
                 <com.google.android.material.textfield.TextInputLayout
+                    app:startIconCheckable="true"
+                    app:startIconDrawable="@drawable/ic_outline_insert_photo_24"
+                    app:startIconContentDescription="选择二维码"
                     android:gravity="center"
                     android:layout_weight="1"
                     android:layout_marginEnd="16dp"

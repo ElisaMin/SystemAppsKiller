@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <data>
+        <variable
+            name="viewModel"
+            type="me.heizi.box.package_manager.activities.home.fragments.ShowVersionInfoDialog.ViewModel" />
+    </data>
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:paddingBottom="24dp"
+        android:paddingHorizontal="24dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        
+        <ImageView
+
+            android:id="@+id/imageView"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:minHeight="200dp"
+            android:layout_marginTop="24dp"
+            tools:srcCompat="@drawable/ic_uininstaller_logo"
+            tools:ignore="ContentDescription" />
+
+        <TextView
+            android:id="@+id/textView3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="12dp"
+            android:text="@{viewModel.version.name}"
+            android:textAppearance="@style/TextAppearance.AppCompat.Large"
+            tools:text="LG G7 30B 自用" />
+
+        <TextView
+            android:id="@+id/editable"
+            android:clickable="true"
+            android:background="?android:selectableItemBackground"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:textAppearance="@style/TextAppearance.AppCompat.Small"
+            tools:text="一共53个应用，可编辑本段文字，本段文字不保存。" />
+
+        <LinearLayout
+            android:layout_marginBottom="12dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <Button
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp"
+                android:layout_weight="1"
+                android:onClick="@{viewModel.editBtnClick}"
+                android:text="@{viewModel.editBtnText}"
+                tools:text="编辑" />
+            <Button
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="8dp"
+                android:layout_weight="1"
+                tools:text="复制列表"
+                android:onClick="@{viewModel.copyBtnClick}"
+                android:text="@{viewModel.copyBtnText}" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_marginBottom="12dp"
+            android:visibility="@{viewModel.helpText!=null}"
+            android:id="@+id/textView7"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TextView" />
+
+    </LinearLayout>
+</layout>

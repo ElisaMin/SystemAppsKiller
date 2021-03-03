@@ -3,12 +3,14 @@ package me.heizi.box.package_manager.activities.home.fragments
 import android.content.ComponentName
 import android.content.Context
 import android.content.ServiceConnection
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import kotlinx.coroutines.Dispatchers
@@ -24,14 +26,13 @@ import me.heizi.box.package_manager.activities.home.HomeActivity.Companion.paren
 import me.heizi.box.package_manager.activities.home.adapters.EditUninstallListAdapter
 import me.heizi.box.package_manager.databinding.DialogCleanBinding
 import me.heizi.box.package_manager.models.BackupType
-import me.heizi.box.package_manager.models.JsonContent
+import me.heizi.box.package_manager.models.CompleteVersion
 import me.heizi.box.package_manager.repositories.CleaningAndroidService
 import me.heizi.box.package_manager.utils.*
 import java.util.*
 
 class CleanDialog : BottomSheetDialogFragment() {
     private val binding by lazy { DialogCleanBinding.bind(requireView()) }
-
     val viewModel = ViewModel()
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? { return layoutInflater.inflate(R.layout.dialog_clean,container) }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -40,6 +41,29 @@ class CleanDialog : BottomSheetDialogFragment() {
         binding.viewModel = viewModel
         viewModel.startCollect()
         viewModel.stopProgress()
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        registerForActivityResult(ActivityResultContracts.GetContent()) {
+            viewModel.run {
+                try {
+                    BitmapFactory.decodeStream(context?.contentResolver!!.openInputStream(it!!)).let { bitmap ->
+                        Compressor.read(bitmap)
+                    }.let { completeVersion -> onUninstallInfoChanged(completeVersion) }
+                    showErrorMessage(null)
+                    inuninstallable()
+                }catch (e:Exception) {
+                    showErrorMessage(e.message)
+                    inuninstallable()
+                }finally { stopProgress() }
+            }
+        }.let {
+            viewModel.onGetImageClick = {
+                viewModel.startProgress()
+                it.launch("image/*")
+            }
+        }
     }
 
 
@@ -90,7 +114,7 @@ class CleanDialog : BottomSheetDialogFragment() {
     private fun ViewModel.onInputting(input:String) {
         if (input.length <= 6) { showErrorMessage(null);return } else { startProgress() }
         try {
-            val jsonContent = Compressor.buildJson(input)
+            val jsonContent = Compressor.read(input)
             onUninstallInfoChanged(jsonContent)
             uninstallable()
             showErrorMessage(null)
@@ -107,10 +131,18 @@ class CleanDialog : BottomSheetDialogFragment() {
     /**
      * 在uninstall info 改变时往adapter放东西
      *
-     * @param json
+     * @param version
      */
-    private fun ViewModel.onUninstallInfoChanged(json:JsonContent?) = lifecycleScope.launch(Main) {
-        editUninstallListAdapter.submitList(json?.apps?.toMutableList())
+    private fun ViewModel.onUninstallInfoChanged(version:CompleteVersion?) = lifecycleScope.launch(Main) {
+        editUninstallListAdapter.submitList(version?.apps?.toMutableList())
+        if (version == null) {
+            viewModel.listCount set ""
+            viewModel.versionName set ""
+        } else {
+            viewModel.listCount set "${version.apps.size}个"
+            viewModel.versionName set version.name
+            uninstallable()
+        }
         Log.i(Application.TAG, "list: changed on cleaning")
     }
 
@@ -133,7 +165,11 @@ class CleanDialog : BottomSheetDialogFragment() {
         }.show()
     }
 
-    inner class ViewModel{
+    inner class ViewModel {
+        lateinit var onGetImageClick:()->Unit
+        val versionName = MutableStateFlow("")
+//        val createTime = MutableStateFlow("")
+        val listCount = MutableStateFlow("")
         val editUninstallListAdapter: EditUninstallListAdapter by lazy { EditUninstallListAdapter() }
         val textInput: MutableStateFlow<String> = MutableStateFlow("")
         val helpText get() = _helpText.asStateFlow()

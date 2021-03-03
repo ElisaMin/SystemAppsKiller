@@ -1,160 +1,122 @@
 package me.heizi.box.package_manager.utils
 
-import android.util.Log
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import me.heizi.box.package_manager.models.JsonContent
-import me.heizi.box.package_manager.models.UninstallInfo
-import me.heizi.box.package_manager.models.VersionConnected
+import android.graphics.Bitmap
+import android.graphics.Color
+import androidx.core.graphics.get
+import com.google.zxing.*
+import com.google.zxing.common.HybridBinarizer
+import com.google.zxing.qrcode.QRCodeReader
+import com.google.zxing.qrcode.QRCodeWriter
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
+import me.heizi.box.package_manager.models.CompleteVersion
 import org.json.JSONObject
-import java.io.ByteArrayOutputStream
-import java.util.*
-import java.util.zip.GZIPInputStream
-import java.util.zip.GZIPOutputStream
+import java.nio.charset.Charset
 
-/**
- * 一个JSON文件使用GZIP进压缩后用Base64进行编码，在网络传播。
- * 源格式：{v:1,d:**any char on it*}
- */
 object Compressor {
-    private const val V1 = 1
-    private val usefulFormat = """\{v:\d,d:.+\}""".toRegex()
 
-    private const val TAG = "UninstallerCoding"
-
-    private const val KEY_NAME = "n"
-    private const val KEY_PACKAGE = "p"
-    private const val KEY_SOURCE = "s"
-    private const val KEY_VERSION = "v"
-    private const val KEY_DATA = "d"
-    private const val KEY_IS_BACKUP = "b"
-    private const val KEY_CREATE_TIME ="t"
-    private const val KEY_ALL_APPS ="a"
-
-    private fun notUsefulFormat():Nothing { throw IllegalArgumentException("数据损坏或非本应用支持的格式") }
-    private fun <E:Exception> notUsefulFormat(e:E):Nothing { throw IllegalArgumentException("数据损坏或非本应用支持的格式",e) }
+    fun notUsefulFormat():Nothing { throw IllegalArgumentException("数据损坏或非本应用支持的格式") }
+    fun <E:Exception> notUsefulFormat(e:E):Nothing { throw IllegalArgumentException("数据损坏或非本应用支持的格式",e) }
     private fun versionNotMatch():Nothing { throw IllegalArgumentException("该卸载方案的版本不属于本版本的软件可解析的范围,请适当升级或降级。") }
+    private val usefulFormat get() = """\{v:\d,d:.+\}""".toRegex()
+
+
+    fun read(bitmap: Bitmap): CompleteVersion {
+        val h = bitmap.height
+        val w = bitmap.width
+        val pixels = IntArray(w*h)
+        var i = 0
+        for (x in 0 until  w) for (y in 0 until h) pixels[i++] = bitmap[x,y]
+        val rgbLuminanceSource = RGBLuminanceSource(w, h, pixels)
+        return QRCodeReader().decode(BinaryBitmap(HybridBinarizer(rgbLuminanceSource)), hashMapOf(
+            DecodeHintType.CHARACTER_SET to CHARSET
+        )).text.toByteArray(Charset.forName(CHARSET)).let {
+            val (versionCode,data)  = unpackedVersion(it)
+
+            when(val v = CompressorVersion.getVersionFormCode(versionCode) ) {
+                is CompressorVersion.V1 ->  v.decodeForImage(data)
+                else -> versionNotMatch()
+            }
+        }
+    }
 
     /**
-     * 把正在分享的可复制文本decode出去
+     * 解释从用户手里拿到的[text]
      *
-     * @param source 类似于这样的格式: {v:1,d:anyway}
+     * @param text {v:[CompleteVersion.versionCode],d:'anyway'}
      * @return
      */
-    fun buildJson(source:String): JsonContent {
-        if (!source.matches(usefulFormat)) notUsefulFormat()
-        val (version, data) = decodeVersionAndDataInfo(source)
-        return when(version) {
-            V1 -> readDataV1(data)
+    fun read(text:String): CompleteVersion {
+        if (!text.matches(usefulFormat)) notUsefulFormat()
+        val (version, data) = unpackedVersion(text)
+        return when(val v = CompressorVersion.getVersionFormCode(version)) {
+            CompressorVersion.V1 -> v.decodeText(data)
             else -> versionNotMatch()
         }
     }
 
-    /**
-     * 对GZIP经过BASE64编码后的字符串进行解码
-     *
-     * 和[compressAndEncodeByBase64]是一对双胞胎
-     * @self 字符串->GZIP->BASE64
-     * @return BASE64->GZIP->字符串
-     */
-    private fun String.decodeBase64AndGzipUncompress():String {
-        return Base64.getDecoder().decode(this).let { compressData->
-            GZIPInputStream(compressData.inputStream()).bufferedReader().readText()
-        }
+    private val currentCompressor get() = CompressorVersion.V1
+
+
+    fun CompleteVersion.toQrCode() = currentCompressor.run {
+        packageVersion(encodeForImage(this@toQrCode))
     }
 
-    /**
-     * 对字符压缩后编码
-     *
-     * @self SOURCE
-     * @return SOURCE->GZIP->BASE64->RESULT
-     */
-    private fun String.compressAndEncodeByBase64():String {
-        val compressed = ByteArrayOutputStream()
-        GZIPOutputStream(compressed).use { compresser->
-            compresser.write(toByteArray())
-        }
-        return Base64.getEncoder().encode(compressed.toByteArray()).let(::String)
+    fun CompleteVersion.toShareableText():String = currentCompressor.run {
+        packageVersionText(encodeText(this@toShareableText))
     }
 
+    private fun CompressorVersion.packageVersionText(text: String) =
+        """{$KEY_VERSION:$versionCode,$KEY_DATA:'${text}'}"""
+
     /**
-     * Read data v1
+     * 包装版本进二维码
      *
-     * @param data 一个base64编码后的GZIP压缩文件,解压后时完全契合README或者[JsonContent]格式的json.
-     * @return [JsonContent]
+     * @param bytes
+     * @return
      */
-    @Suppress("NAME_SHADOWING")
-    private fun readDataV1(data:String): JsonContent {
-        //解码
-        val data = data.decodeBase64AndGzipUncompress()
+    private fun CompressorVersion.packageVersion(bytes: ByteArray): Bitmap? {
         return try {
-            //转换成为JSON
-            val data = JSONObject(data)
-            //拿出apps字段的UninstallInfo
-            val uninstallInfo = LinkedList<UninstallInfo>()
-            val array = data.getJSONArray(KEY_ALL_APPS)
-            repeat(array.length()) { i ->
-                val app= array.getJSONObject(i)
-                uninstallInfo.add(
-                    UninstallInfo.DefaultUninstallInfo(
-                        applicationName = app.getString(KEY_NAME),
-                        packageName = app.getString(KEY_PACKAGE),
-                        sourceDirectory = app.getString(KEY_SOURCE),
-                    )
-                )
-            }//一些别的数据
-            JsonContent(
-                name = data.getString(KEY_NAME),
-                createTime = data.getInt(KEY_CREATE_TIME),
-                isBackup = data.getBoolean(KEY_IS_BACKUP),
-                apps = uninstallInfo
-            )
-        }catch (e:Exception) {
-            notUsefulFormat(e)
-        }
-    }
-
-    /**
-     * 把[VersionConnected]转换成为可分享文本 v1
-     *
-     * @param version 转换的对象
-     * @return 一个base64编码后的GZIP压缩文件,解压后时完全契合README或者[JsonContent]格式的json. 并且有版本信息
-     */
-    suspend fun generateV1(version: VersionConnected):String {
-        val listBuildingTask = GlobalScope.async(Dispatchers.Default) {
-            val sb = StringBuilder()
-            //apps:[
-            sb.append(KEY_ALL_APPS)
-            sb.append(":[")
-            for (r in version.apps) {
-                sb.append("""{$KEY_NAME:'${r.name}',$KEY_PACKAGE:'${r.packageName}',$KEY_SOURCE:'${r.source}'}""")
+            val versionCode: Byte = versionCode.toByte()
+            val data = bytes
+                .let { origin -> ByteArray(origin.size +1 ) { if (it!=0) origin[it-1] else versionCode} }
+                .let { String(it, charset(CHARSET)) }
+            var end = 500
+            QRCodeWriter().encode(data, BarcodeFormat.QR_CODE,end,end, hashMapOf(
+                EncodeHintType.CHARACTER_SET to CHARSET,
+                EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.L
+            )).let { bitMatrix ->
+                var limit = 0
+                do {
+                    val bool = bitMatrix[limit,limit]
+                    limit++
+                }while (!bool)
+                var start = 0
+                if (limit > SKIP_PIXEL_MARGIN) {
+                    start = limit- SKIP_PIXEL_MARGIN
+                    end -= start
+                }
+                Bitmap.createBitmap(bitMatrix.width, bitMatrix.width, Bitmap.Config.ARGB_8888).apply {
+                    val array = start..end
+                    for (x in array) for (y in array) {
+                        setPixel(x, y, (if (bitMatrix[x, y]) Color.BLACK else Color.WHITE))
+                    }
+                }
             }
-            //]
-            sb.append("]")
-            val result = sb.toString().replace("}{","},{")
-            Log.i(TAG, "generateV1: list$result")
-            result
+        }catch (e: WriterException) {
+            if (e.message != "Data too big") throw Exception("未知错误",e)
+            null
+        }catch (e:Exception) {
+            throw Exception("未知错误",e)
         }
-        val sb = StringBuilder()
-        with(version) {
-            sb.append("""{$KEY_NAME:'$name',$KEY_CREATE_TIME:$createTime,$KEY_IS_BACKUP:$isBackup,""")
-            sb.append(listBuildingTask.await())
-            sb.append("}")
-        }
-        //获得不包含版本信息的原始数据
-        val result = sb.toString().compressAndEncodeByBase64()
-        Log.d(TAG, "generateV1: result:$result")
-        return """{v:1,d:'$result'}"""
     }
 
     /**
-     * Decode version and data info
+     * 解析版本信息
      *
-     * @param string {[KEY_VERSION]:1,[KEY_DATA]:avafgfhaghaffhgasf==}
-     * @return version and data
+     * @param string
+     * @return
      */
-    private fun decodeVersionAndDataInfo(string: String):Pair<Int,String> {
+    private fun unpackedVersion(string: String):Pair<Int,String> {
         return try {
             val data = JSONObject(string)
             data.getInt(KEY_VERSION) to data.getString(KEY_DATA)
@@ -162,4 +124,18 @@ object Compressor {
             notUsefulFormat(e)
         }
     }
+
+    private fun unpackedVersion(bytes: ByteArray):Pair<Int,ByteArray> {
+        return try {
+            val versionCode = bytes.first().toInt()
+            val data = ByteArray(bytes.size-1) { i -> bytes[i+1] }
+            versionCode to data
+        }catch (e:Exception) {
+            notUsefulFormat(e)
+        }
+    }
+    private const val KEY_VERSION = "v"
+    private const val KEY_DATA = "d"
+    private const val CHARSET = "ISO8859-1"
+    private const val SKIP_PIXEL_MARGIN = 10
 }

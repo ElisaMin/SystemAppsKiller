@@ -8,6 +8,11 @@ import me.heizi.box.package_manager.Application
  * 支持的备份方法
  */
 sealed class BackupType {
+    companion object {
+        const val HasNoBackup = 0
+        const val NameBak = 2
+        const val MoveDir = 3
+    }
     /**
      * Just remove
      *

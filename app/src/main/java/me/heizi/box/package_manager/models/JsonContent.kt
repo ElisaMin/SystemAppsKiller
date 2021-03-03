@@ -9,8 +9,9 @@ package me.heizi.box.package_manager.models
  * @property apps
  */
 data class JsonContent(
-    val name:String,
-    val createTime:Int,
-    val isBackup:Boolean,
-    val apps:List<UninstallInfo>
-)
+    override val name:String,
+    override val createTime:Int,
+    override val backupType: Int,
+    override val apps:List<UninstallInfo>
+):CompleteVersion
+
