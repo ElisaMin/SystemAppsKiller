@@ -10,7 +10,8 @@ import me.heizi.box.package_manager.Application.Companion.app
 import me.heizi.box.package_manager.activities.home.adapters.UninstallApplicationAdapter
 import me.heizi.box.package_manager.models.BackupType
 import me.heizi.box.package_manager.repositories.PackageRepository
-import me.heizi.box.package_manager.utils.set
+import me.heizi.kotlinx.android.set
+
 
 class HomeContainerViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -33,7 +34,7 @@ class HomeContainerViewModel(application: Application) : AndroidViewModel(applic
         UninstallApplicationAdapter(
             viewModelScope,
             packageRepository.defaultAdapterService,
-            stopProcessing = {_processing set  false},
+            stopProcessing = {_processing set false},
             processing = { _processing set true }
         )
     }
@@ -42,8 +43,6 @@ class HomeContainerViewModel(application: Application) : AndroidViewModel(applic
 
     private val _processing = MutableStateFlow(true)
 
-    init {
-    }
     fun stopProcess() {
         _processing set false
     }

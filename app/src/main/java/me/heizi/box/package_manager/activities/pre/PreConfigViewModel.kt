@@ -1,7 +1,6 @@
 package me.heizi.box.package_manager.activities.pre
 
 import android.util.Log
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers.IO
@@ -10,14 +9,15 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import me.heizi.box.package_manager.Application.Companion.TAG
-import me.heizi.box.package_manager.utils.set
-import me.heizi.box.package_manager.utils.unMutable
+import me.heizi.kotlinx.android.set
 import me.heizi.kotlinx.shell.CommandResult
 import me.heizi.kotlinx.shell.CommandResult.Failed
 import me.heizi.kotlinx.shell.CommandResult.Success
 import me.heizi.kotlinx.shell.su
+
 
 class PreConfigViewModel : ViewModel() {
 
@@ -38,20 +38,20 @@ class PreConfigViewModel : ViewModel() {
     val status get() = _status.asSharedFlow()
     private val _status = MutableSharedFlow<Status>()
 
-    val errorMessage        get() = _errorMessage.unMutable()
-    val text                get() = _text.unMutable()
-    val isWaiting           get() = _isWaiting.unMutable()
-    val isShowingMountInput get() = _isShowingMountInput.unMutable()
+    val errorMessage        get() = _errorMessage.asStateFlow()
+    val text                get() = _text.asStateFlow()
+    val isWaiting           get() = _isWaiting.asStateFlow()
+    val isShowingMountInput get() = _isShowingMountInput.asStateFlow()
 
     /**
      * Mount string 双向绑定 输入框内的文字
      */
     val mountString = MutableStateFlow("")
 
-    private val _isWaiting = MutableLiveData(true)
-    private val _isShowingMountInput = MutableLiveData(false)
-    private val _errorMessage = MutableLiveData<String?>(null)
-    private val _text = MutableLiveData("欢迎使用黑字卸载器")
+    private val _isWaiting = MutableStateFlow(true)
+    private val _isShowingMountInput = MutableStateFlow(false)
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    private val _text = MutableStateFlow("欢迎使用黑字卸载器")
 
 
     /**

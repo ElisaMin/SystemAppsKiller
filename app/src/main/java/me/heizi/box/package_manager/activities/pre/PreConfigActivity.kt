@@ -16,14 +16,15 @@ import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.Application.Companion.app
 import me.heizi.box.package_manager.activities.home.HomeActivity
 import me.heizi.box.package_manager.databinding.ActivityPreConfigBinding
-import me.heizi.box.package_manager.utils.DialogBtns
-import me.heizi.box.package_manager.utils.dialog
-import me.heizi.box.package_manager.utils.set
+import me.heizi.kotlinx.android.DialogBtns
+import me.heizi.kotlinx.android.dialog
+import me.heizi.kotlinx.android.main
+import me.heizi.kotlinx.android.set
 
 class PreConfigActivity :AppCompatActivity() {
+
     private val binding by lazy { ActivityPreConfigBinding.inflate(layoutInflater) }
     private val viewModel by viewModels<PreConfigViewModel>()
-
     /**
      * Launch on first time
      *
@@ -68,27 +69,29 @@ class PreConfigActivity :AppCompatActivity() {
         }
         viewModel.start()
     }
-    private fun toHome() = lifecycleScope.launch (Main){
+    private fun toHome() = main {
         Intent(this@PreConfigActivity,HomeActivity::class.java).let {
 //            it.putExtra()
             startActivity(it)
         }
         finish()
     }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        app.preferenceMapper.owner = this
+    }
 
+    override fun onResume() {
+        super.onResume()
         if(app.preferenceMapper.mountString == null) {
 //        if(false) {
             launchOnFirstTime()
         } else {
             toHome()
         }
-        setContentView(binding.root)
         binding.vm = viewModel
         binding.lifecycleOwner = this
+        setContentView(binding.root)
     }
-
     var collects = 0
 }

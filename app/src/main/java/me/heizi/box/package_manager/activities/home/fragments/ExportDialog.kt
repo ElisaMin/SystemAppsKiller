@@ -30,6 +30,7 @@ import me.heizi.box.package_manager.models.VersionConnected
 import me.heizi.box.package_manager.utils.*
 import me.heizi.box.package_manager.utils.Compressor.toQrCode
 import me.heizi.box.package_manager.utils.Compressor.toShareableText
+import me.heizi.kotlinx.android.*
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
@@ -126,7 +127,7 @@ class ExportDialog : BottomSheetDialogFragment<DialogExportBinding>() {
                     var help:String? = null
                     val bitmap = it
                         .runCatching { toQrCode() }
-                        .onFailure { e -> help = e.message }
+                        .onFailure { e -> help = "${e.javaClass.name}:${e.message}" }
                         .onSuccess { bitmap ->
                             if (bitmap == null) help = "数据太大 无法转换成二维码，期待往下的更新。"
                         }.getOrNull()

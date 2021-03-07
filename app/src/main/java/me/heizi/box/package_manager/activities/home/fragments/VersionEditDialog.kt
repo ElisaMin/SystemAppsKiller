@@ -12,8 +12,8 @@ import me.heizi.box.package_manager.activities.home.adapters.EditUninstallListAd
 import me.heizi.box.package_manager.custom_view.BottomSheetDialogFragment
 import me.heizi.box.package_manager.databinding.DialogListEditBinding
 import me.heizi.box.package_manager.models.UninstallInfo
-import me.heizi.box.package_manager.utils.default
-import me.heizi.box.package_manager.utils.main
+import me.heizi.kotlinx.android.default
+import me.heizi.kotlinx.android.main
 
 class VersionEditDialog(
     private val sourceList: ArrayList<UninstallInfo>,

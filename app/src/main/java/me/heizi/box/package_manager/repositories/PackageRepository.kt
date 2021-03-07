@@ -21,7 +21,7 @@ import me.heizi.box.package_manager.activities.home.adapters.UninstallApplicatio
 import me.heizi.box.package_manager.models.BackupType
 import me.heizi.box.package_manager.utils.PathFormatter.getPreviousPath
 import me.heizi.box.package_manager.utils.Uninstall.uninstall
-import me.heizi.box.package_manager.utils.longToast
+import me.heizi.kotlinx.android.longToast
 import me.heizi.kotlinx.shell.CommandResult
 import java.util.*
 import kotlin.collections.set
@@ -173,7 +173,6 @@ class PackageRepository(
         val result = LinkedList<ApplicationInfo>()
         //等待子组排序完毕
         sortJob.join()
-        while (sortJob.isActive) Unit
         //排序父组
         group.entries.sortedBy { it.key }.forEach {
             result.addAll(it.value)

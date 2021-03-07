@@ -16,7 +16,6 @@ import kotlin.text.StringBuilder as CommandLine
 
 object Uninstall {
 
-
     class NotSystemApp(app:String):IllegalArgumentException("${app}非系统应用")
     class NotNormallyPath(path:String):IllegalArgumentException("${path}非本软件可识别地址")
     /**

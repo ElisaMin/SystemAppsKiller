@@ -21,8 +21,8 @@ import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.models.BackupType
 import me.heizi.box.package_manager.models.UninstallInfo
 import me.heizi.box.package_manager.utils.Uninstall.uninstall
-import me.heizi.box.package_manager.utils.io
-import me.heizi.box.package_manager.utils.main
+import me.heizi.kotlinx.android.io
+import me.heizi.kotlinx.android.main
 import me.heizi.kotlinx.shell.CommandResult
 
 /**

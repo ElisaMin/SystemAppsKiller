@@ -1,3 +1,4 @@
 rootProject.name = "PackageManager"
 include ':app'
 include ':khell'
+include ':kotlinx-android'

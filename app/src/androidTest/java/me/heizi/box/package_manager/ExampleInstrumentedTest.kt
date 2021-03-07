@@ -5,11 +5,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import me.heizi.box.package_manager.dao.entities.UninstallRecord
 import me.heizi.box.package_manager.models.VersionConnected
-import me.heizi.box.package_manager.utils.Compressor
-import me.heizi.box.package_manager.utils.Compressor.toQrCode
-import me.heizi.box.package_manager.utils.Compressor.toShareableText
-import me.heizi.box.package_manager.utils.CompressorVersion
-import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.*
 
@@ -82,36 +77,36 @@ class ExampleInstrumentedTest {
 //            println((1).toByte())
 //        }
 //    }
-    @Test
-    fun qc_code() {
-        println("start")
-        val connected = connected
-        println(connected.apps.size)
-        CompressorVersion.V1.encodeForImage(connected).size.let(::println)
-        println("connected")
-        connected.toQrCode()!!.let {
-            println("not null")
-            Compressor.read(it)
-        }.let {
-            var listIsSame = apps.size == connected.apps.size
-            if (listIsSame) for ( i in 0 until apps.size) {
-                listIsSame = apps[i].packageName==connected.apps[i].packageName
-                if(!listIsSame) break
-            }
-            listIsSame
-        }.let(::println)
-    }
-    @Test
-    fun compressorNew() {
-        VersionConnected(
-            name = "123",
-            apps = apps,
-            createTime = System.currentTimeMillis().toInt(),
-        ).also {
-            it.toQrCode()
-        }.toShareableText()
-            .let { println(it) }
-    }
+//    @Test
+//    fun qc_code() {
+//        println("start")
+//        val connected = connected
+//        println(connected.apps.size)
+//        CompressorVersion.V1.encodeForImage(connected).size.let(::println)
+//        println("connected")
+//        connected.toQrCode()!!.let {
+//            println("not null")
+//            Compressor.read(it)
+//        }.let {
+//            var listIsSame = apps.size == connected.apps.size
+//            if (listIsSame) for ( i in 0 until apps.size) {
+//                listIsSame = apps[i].packageName==connected.apps[i].packageName
+//                if(!listIsSame) break
+//            }
+//            listIsSame
+//        }.let(::println)
+//    }
+//    @Test
+//    fun compressorNew() {
+//        VersionConnected(
+//            name = "123",
+//            apps = apps,
+//            createTime = System.currentTimeMillis().toInt(),
+//        ).also {
+//            it.toQrCode()
+//        }.toShareableText()
+//            .let { println(it) }
+//    }
 //    @Test
 //    fun compressor() {
 //        val split = arrayOf("/"," ","-",".","_")

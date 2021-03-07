@@ -69,6 +69,7 @@ android {
 
 dependencies {
     implementation project(':khell')
+    implementation project(':kotlinx-android')
     //lifecycle stuff
     implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.3.0'
     implementation 'androidx.lifecycle:lifecycle-service:2.3.0'

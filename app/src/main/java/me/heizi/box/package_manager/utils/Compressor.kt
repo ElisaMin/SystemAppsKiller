@@ -2,12 +2,13 @@ package me.heizi.box.package_manager.utils
 
 import android.graphics.Bitmap
 import android.graphics.Color
-import androidx.core.graphics.get
+import android.util.Log
 import com.google.zxing.*
-import com.google.zxing.common.HybridBinarizer
+import com.google.zxing.common.GlobalHistogramBinarizer
 import com.google.zxing.qrcode.QRCodeReader
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
+import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.models.CompleteVersion
 import org.json.JSONObject
 import java.nio.charset.Charset
@@ -23,15 +24,17 @@ object Compressor {
     fun read(bitmap: Bitmap): CompleteVersion {
         val h = bitmap.height
         val w = bitmap.width
+        Log.i(TAG, "read: $h,$w")
         val pixels = IntArray(w*h)
-        var i = 0
-        for (x in 0 until  w) for (y in 0 until h) pixels[i++] = bitmap[x,y]
+
+        bitmap.getPixels(pixels, 0, w, 0, 0, w, h)
         val rgbLuminanceSource = RGBLuminanceSource(w, h, pixels)
-        return QRCodeReader().decode(BinaryBitmap(HybridBinarizer(rgbLuminanceSource)), hashMapOf(
-            DecodeHintType.CHARACTER_SET to CHARSET
+        return QRCodeReader().decode(BinaryBitmap(GlobalHistogramBinarizer(rgbLuminanceSource)), hashMapOf(
+            DecodeHintType.CHARACTER_SET to CHARSET,
+            DecodeHintType.TRY_HARDER to java.lang.Boolean.TRUE,
+            DecodeHintType.PURE_BARCODE to java.lang.Boolean.TRUE,
         )).text.toByteArray(Charset.forName(CHARSET)).let {
             val (versionCode,data)  = unpackedVersion(it)
-
             when(val v = CompressorVersion.getVersionFormCode(versionCode) ) {
                 is CompressorVersion.V1 ->  v.decodeForImage(data)
                 else -> versionNotMatch()
@@ -57,8 +60,8 @@ object Compressor {
     private val currentCompressor get() = CompressorVersion.V1
 
 
-    fun CompleteVersion.toQrCode() = currentCompressor.run {
-        packageVersion(encodeForImage(this@toQrCode))
+    fun CompleteVersion.toQrCode(): Bitmap? = currentCompressor.run {
+        genQrCode(String(packageVersion(encodeForImage(this@toQrCode)), charset(CHARSET)))
     }
 
     fun CompleteVersion.toShareableText():String = currentCompressor.run {
@@ -68,48 +71,49 @@ object Compressor {
     private fun CompressorVersion.packageVersionText(text: String) =
         """{$KEY_VERSION:$versionCode,$KEY_DATA:'${text}'}"""
 
+    private fun genQrCode(data: String):Bitmap? = try {
+        var end = 500
+        QRCodeWriter().encode(data, BarcodeFormat.QR_CODE,end,end, hashMapOf(
+            EncodeHintType.CHARACTER_SET to CHARSET,
+            EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.L
+        )).let { bitMatrix ->
+            var limit = 0
+            do {
+                val bool = bitMatrix[limit,limit]
+                limit++
+            }while (!bool)
+            var start = 0
+            if (limit > SKIP_PIXEL_MARGIN) {
+                start = limit- SKIP_PIXEL_MARGIN
+                end -= start
+            }
+            Bitmap.createBitmap(bitMatrix.width, bitMatrix.width, Bitmap.Config.ARGB_8888).apply {
+                val array = start..end
+                for (x in array) for (y in array) {
+                    setPixel(x, y, (if (bitMatrix[x, y]) Color.BLACK else Color.WHITE))
+                }
+            }
+        }
+    }catch (e: WriterException) {
+        if (e.message != "Data too big") throw Exception("未知错误",e)
+        null
+    }catch (e:Exception) {
+        throw Exception("未知错误",e)
+    }
+
     /**
      * 包装版本进二维码
      *
      * @param bytes
      * @return
      */
-    private fun CompressorVersion.packageVersion(bytes: ByteArray): Bitmap? {
-        return try {
-            val versionCode: Byte = versionCode.toByte()
-            val data = bytes
-                .let { origin -> ByteArray(origin.size +1 ) { if (it!=0) origin[it-1] else versionCode} }
-                .let { String(it, charset(CHARSET)) }
-            var end = 500
-            QRCodeWriter().encode(data, BarcodeFormat.QR_CODE,end,end, hashMapOf(
-                EncodeHintType.CHARACTER_SET to CHARSET,
-                EncodeHintType.ERROR_CORRECTION to ErrorCorrectionLevel.L
-            )).let { bitMatrix ->
-                var limit = 0
-                do {
-                    val bool = bitMatrix[limit,limit]
-                    limit++
-                }while (!bool)
-                var start = 0
-                if (limit > SKIP_PIXEL_MARGIN) {
-                    start = limit- SKIP_PIXEL_MARGIN
-                    end -= start
-                }
-                Bitmap.createBitmap(bitMatrix.width, bitMatrix.width, Bitmap.Config.ARGB_8888).apply {
-                    val array = start..end
-                    for (x in array) for (y in array) {
-                        setPixel(x, y, (if (bitMatrix[x, y]) Color.BLACK else Color.WHITE))
-                    }
-                }
-            }
-        }catch (e: WriterException) {
-            if (e.message != "Data too big") throw Exception("未知错误",e)
-            null
-        }catch (e:Exception) {
-            throw Exception("未知错误",e)
+    private fun CompressorVersion.packageVersion(bytes: ByteArray): ByteArray {
+        val result = ByteArray(bytes.size+1) {
+            bytes[it]
         }
+        result[bytes.size] = versionCode.toByte()
+        return bytes
     }
-
     /**
      * 解析版本信息
      *
@@ -127,8 +131,8 @@ object Compressor {
 
     private fun unpackedVersion(bytes: ByteArray):Pair<Int,ByteArray> {
         return try {
-            val versionCode = bytes.first().toInt()
-            val data = ByteArray(bytes.size-1) { i -> bytes[i+1] }
+            val versionCode = bytes.last().toInt()
+            val data = ByteArray(bytes.size-1,bytes::get)
             versionCode to data
         }catch (e:Exception) {
             notUsefulFormat(e)

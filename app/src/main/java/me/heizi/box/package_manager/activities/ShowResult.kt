@@ -19,7 +19,7 @@ import me.heizi.box.package_manager.Application
 import me.heizi.box.package_manager.R
 import me.heizi.box.package_manager.activities.home.adapters.EditUninstallListAdapter
 import me.heizi.box.package_manager.repositories.CleaningAndroidService
-import me.heizi.box.package_manager.utils.dialog
+import me.heizi.kotlinx.android.dialog
 import me.heizi.kotlinx.shell.CommandResult
 
 class ShowResult : AppCompatActivity() {

@@ -24,7 +24,12 @@ import me.heizi.box.package_manager.activities.home.fragments.HelpDialog
 import me.heizi.box.package_manager.dao.DB
 import me.heizi.box.package_manager.databinding.ActivityHomeBinding
 import me.heizi.box.package_manager.repositories.PackageRepository
-import me.heizi.box.package_manager.utils.*
+import me.heizi.box.package_manager.utils.clickSnackBar
+import me.heizi.box.package_manager.utils.longSnackBar
+import me.heizi.kotlinx.android.dialog
+import me.heizi.kotlinx.android.main
+import me.heizi.kotlinx.android.shortToast
+import me.heizi.kotlinx.android.unconfined
 import kotlin.random.Random
 
 class HomeActivity : AppCompatActivity() {
@@ -110,7 +115,7 @@ class HomeActivity : AppCompatActivity() {
                         viewModel.adapter.removeAt(s.position)
                     }
                     is PackageRepository.UninstallStatues.Failed -> {
-                        Log.i(Application.TAG, "onViewCreated: ${s}")
+                        Log.i(Application.TAG, "onViewCreated: $s")
                         val message =
                             """|卸载失败:${s.code}
                                |原因:${s.errorMessage ?: "无"}

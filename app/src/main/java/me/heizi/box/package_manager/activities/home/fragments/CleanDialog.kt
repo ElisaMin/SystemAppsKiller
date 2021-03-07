@@ -13,6 +13,8 @@ import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.zxing.FormatException
+import com.google.zxing.NotFoundException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +23,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import me.heizi.box.package_manager.Application
 import me.heizi.box.package_manager.Application.Companion.DEFAULT_MOUNT_STRING
+import me.heizi.box.package_manager.Application.Companion.TAG
 import me.heizi.box.package_manager.R
 import me.heizi.box.package_manager.activities.home.HomeActivity.Companion.parent
 import me.heizi.box.package_manager.activities.home.adapters.EditUninstallListAdapter
@@ -29,6 +32,10 @@ import me.heizi.box.package_manager.models.BackupType
 import me.heizi.box.package_manager.models.CompleteVersion
 import me.heizi.box.package_manager.repositories.CleaningAndroidService
 import me.heizi.box.package_manager.utils.*
+import me.heizi.kotlinx.android.default
+import me.heizi.kotlinx.android.dialogBuilder
+import me.heizi.kotlinx.android.set
+import me.heizi.kotlinx.android.shortToast
 import java.util.*
 
 class CleanDialog : BottomSheetDialogFragment() {
@@ -46,20 +53,33 @@ class CleanDialog : BottomSheetDialogFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         registerForActivityResult(ActivityResultContracts.GetContent()) {
-            viewModel.run {
+            viewModel.run { default {
+                Log.i(TAG, "onReslt: called")
                 try {
-                    BitmapFactory.decodeStream(context?.contentResolver!!.openInputStream(it!!)).let { bitmap ->
-                        Compressor.read(bitmap)
-                    }.let { completeVersion -> onUninstallInfoChanged(completeVersion) }
+                    val content = context?.contentResolver?.openInputStream(it)!!.buffered()
+                    val bitmap = BitmapFactory.decodeStream(content)
+//                    main { context?.dialog(view = ImageView(context).also { it.setImageBitmap(bitmap) }) }
+                    val completeVersion = Compressor.read(bitmap)
+                    Log.i(TAG, "onCreate: not null")
+                    onUninstallInfoChanged(completeVersion)
                     showErrorMessage(null)
+                    uninstallable()
+                } catch (e: Exception) {
+                    Log.e(TAG, "onCreate: there some hose in the app", e)
+                    when(e) {
+                        is FormatException -> throw Exception(e)
+                        is NotFoundException ->  "找不到二维码...裁剪后再试一遍?"
+                        else -> "${e.javaClass.name}:${e.message}"
+                    } .let(::showErrorMessage)
                     inuninstallable()
-                }catch (e:Exception) {
-                    showErrorMessage(e.message)
-                    inuninstallable()
-                }finally { stopProgress() }
+                } finally {
+                    stopProgress()
+                }
+            }
             }
         }.let {
             viewModel.onGetImageClick = {
+                viewModel.showErrorMessage(null)
                 viewModel.startProgress()
                 it.launch("image/*")
             }

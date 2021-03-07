@@ -14,15 +14,15 @@ import me.heizi.box.package_manager.activities.home.HomeActivity.Companion.paren
 import me.heizi.box.package_manager.custom_view.BottomSheetDialogFragment
 import me.heizi.box.package_manager.dao.entities.Version
 import me.heizi.box.package_manager.databinding.DialogShowQcCodeBinding
-import me.heizi.box.package_manager.utils.DialogBtns
-import me.heizi.box.package_manager.utils.dialog
+import me.heizi.kotlinx.android.DialogBtns
+import me.heizi.kotlinx.android.dialog
 
 class ShowVersionInfoDialog <Image>(
     private val viewModel:ViewModel<Image>
 ):BottomSheetDialogFragment<DialogShowQcCodeBinding>() {
     override val binding: DialogShowQcCodeBinding by lazy { DialogShowQcCodeBinding.inflate(layoutInflater) }
     private val editText by lazy{ EditText(context) }
-    private val dialog by lazy { context?.dialog(DialogBtns.Positive("确定") {_,_-> },view = editText,title = "输入文字") }
+    private val dialog by lazy { context?.dialog(DialogBtns.Positive("确定") { _, _-> },view = editText,title = "输入文字") }
     @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)

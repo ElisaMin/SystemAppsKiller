@@ -21,6 +21,10 @@ import me.heizi.box.package_manager.databinding.ItemAppUninstallWithTitleBinding
 import me.heizi.box.package_manager.repositories.PackageRepository.Companion.isUserApp
 import me.heizi.box.package_manager.utils.*
 import me.heizi.box.package_manager.utils.PathFormatter.diffPreviousPathAreNotSame
+import me.heizi.kotlinx.android.DialogBtns
+import me.heizi.kotlinx.android.dialog
+import me.heizi.kotlinx.android.longToast
+import me.heizi.kotlinx.android.shortToast
 import java.util.*
 
 
