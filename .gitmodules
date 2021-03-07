@@ -1,9 +1,6 @@
-[submodule "android"]
-	path = android
-	url = git@github.com:ElisaMin/Khell.git
 [submodule "khell"]
 	path = khell
 	url = git@github.com:ElisaMin/Khell.git
 [submodule "kotlinx-android"]
 	path = kotlinx-android
-	url = ./kotlinx-android
+	url = git@github.com:ElisaMin/androidx-ktx.git
