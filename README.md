@@ -5,17 +5,24 @@ GPLv3.0
 
 # 开发思路
 ## 界面
-首先应用主页有展示系统应用的分类和具体的系统应用，分类依据为path的上一层也就是/system/app/phonesky/googleplaystore.apk的分类在/system/app，这就是垂直的分类展示了，用套娃RecyclerView就能做到。
+首先应用主页有展示系统应用的分类和具体的系统应用，分类依据为path的上一层也就是/system/app/phonesky/googleplaystore.apk的分类在/system/app，这就是垂直的分类展示了，先按照path排序，在`RecyclerView.Adapter.onBindHoder`里面判断上下的path是否一致然后往item添加title即可。
 而设置界面为bottom sheet 呼出方式为点按在屏幕上方的toolbar的menu，定义一些类似于在启动时所需要执行的shell脚本挂载system分区，是否启用`备份`功能。
 导入界面则展示一个输入的框，和一个[path和删除]的列表，和一个小勾勾。
-导出界面主页面展示多个版本，并且可以对版本命名、添加版本，版本点击后展示应用的[名称 path 删除的按钮]的列表，在导出时获得一串乱码。
+导出界面主页面展示多个版本，并且可以对版本命名、添加版本，版本点击后展示应用的[名称 path 删除的按钮]的列表，在导出时获得一串乱码或者一份二维码。
 ## 功能
 ### 卸载时
 卸载时先存储应用的名称和路径，判断是否需要用SHELL执行挂载操作，再对其进行删除或者移动，以及data分区。
 ##### 备份时
 备份时则由用户选择是否备份在/sdcard/android/data...还是在/sdcard/的任意地方。
 ### 导出入
-导出时从数据内获取数据并转换成为json数据并压缩，导入反道而行。
+导出时从数据内获取数据并转换成为json数据并压缩，导入反道而行。在使用字符串压缩后我发现`json->gzip->base64`虽然实现了可分享文本 但是配合起国内的评论过滤系统还是拉了。于是我加入了二维码，但是一份二维码可以容纳的东西太小，我不得不另行其道。
+##### 序列化
+两个区域 一个字典区 一个序列区
+###### 序列区
+序列区由两个byte作为单位，(0,0)-(1,255)为预留字典区，而剩下的2-255为"自定义字典区"
+###### 字典区
+split by `\n`
+TODO序列化实现
 ##### 关于字符压缩
 我对比了对于 [卸载列表](https://github.com/ElisaMin/SystemAppsKiller/blob/7adfc99f86c305cba054553d74679ec24480fe05/app/src/main/java/me/heizi/box/packagemanager/libs/lib.kt) 的压缩后进行base64编码的长度，我打算使用GZIP。
 
@@ -36,7 +43,7 @@ GPLv3.0
 ```
 执行成功就判断成功了
 ### 搜索
-待解决：更好用的
+分割所有的词汇 me.heizi.anyway to `me``heizi` `anyway` 然后实现模糊搜索
 ## 风格化
 ## 用户使用流程
 ### 第一次打开时
